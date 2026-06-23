@@ -10,7 +10,10 @@ describe("App", () => {
     expect(
       screen.getByRole("heading", { name: "Design Language Extractor" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Projects" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Projects" })).toHaveAttribute(
+      "href",
+      "/",
+    );
   });
 
   it("renders the empty projects state at the root route", () => {

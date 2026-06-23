@@ -37,12 +37,12 @@ jobs:
 
       - name: Check Rust formatting
         working-directory: src-tauri
-        run: cargo fmt --check
+        run: cargo fmt --all -- --check
 
       - name: Lint Rust
         working-directory: src-tauri
-        run: cargo clippy --all-targets -- -D warnings
+        run: cargo clippy --workspace --all-targets -- -D warnings
 
       - name: Test Rust
         working-directory: src-tauri
-        run: cargo test
+        run: cargo test --workspace
