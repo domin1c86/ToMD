@@ -1,5 +1,6 @@
 use design_core::{
-    DesignSpec, Evidence, EvidenceRegion, Rule, RuleKind, RuleStatus, Uncertainty, ValidationIssue,
+    DesignSpec, Evidence, EvidenceRegion, Platform, Rule, RuleKind, RuleStatus, Uncertainty,
+    ValidationIssue,
 };
 use uuid::Uuid;
 
@@ -8,6 +9,13 @@ fn empty_spec_uses_schema_version_one() {
     let spec = DesignSpec::empty("project-1");
 
     assert_eq!(spec.metadata.schema_version, "1.0");
+}
+
+#[test]
+fn empty_spec_uses_cross_platform_metadata_default() {
+    let spec = DesignSpec::empty("project-1");
+
+    assert_eq!(spec.metadata.platform, Platform::CrossPlatform);
 }
 
 #[test]
@@ -33,6 +41,10 @@ fn rejected_rules_are_not_exportable() {
     );
     rule.status = RuleStatus::Rejected;
 
+    let mut spec = DesignSpec::empty("project-1");
+    spec.layout.push(rule.clone());
+
+    spec.validate().unwrap();
     assert!(!rule.is_exportable());
 }
 

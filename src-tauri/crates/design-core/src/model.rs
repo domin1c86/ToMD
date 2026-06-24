@@ -27,6 +27,7 @@ impl DesignSpec {
             metadata: Metadata {
                 schema_version: "1.0".to_owned(),
                 project_id: project_id.into(),
+                platform: Platform::CrossPlatform,
                 provider_id: None,
                 model: None,
                 source_screenshot_ids: Vec::new(),
@@ -54,6 +55,7 @@ impl DesignSpec {
 pub struct Metadata {
     pub schema_version: String,
     pub project_id: String,
+    pub platform: Platform,
     pub provider_id: Option<String>,
     pub model: Option<String>,
     pub source_screenshot_ids: Vec<Uuid>,

@@ -12,6 +12,7 @@ fn export_typescript_bindings() {
     assert!(bindings.contains(
         "export type RuleStatus = \"pending\" | \"accepted\" | \"edited\" | \"rejected\";"
     ));
+    assert!(bindings.contains("platform: Platform"));
     assert!(bindings.contains("value: unknown | null"));
 
     if let Some(parent) = output_path.parent() {

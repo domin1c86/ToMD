@@ -8,5 +8,5 @@ export type EvidenceRegion = { x: number, y: number, width: number, height: numb
 export type Evidence = { id: string, screenshot_id: string, region: EvidenceRegion | null, description: string, };
 export type Uncertainty = { id: string, statement: string, evidence_ids: Array<string>, };
 export type Rule = { id: string, category: string, statement: string, kind: RuleKind, scope: RuleScope, value: unknown | null, evidence_ids: Array<string>, confidence: number, status: RuleStatus, source: RuleSource, };
-export type Metadata = { schema_version: string, project_id: string, provider_id: string | null, model: string | null, source_screenshot_ids: Array<string>, excluded_terms: Array<string>, created_at: string, };
+export type Metadata = { schema_version: string, project_id: string, platform: Platform, provider_id: string | null, model: string | null, source_screenshot_ids: Array<string>, excluded_terms: Array<string>, created_at: string, };
 export type DesignSpec = { metadata: Metadata, intent: Array<Rule>, tokens: Array<Rule>, layout: Array<Rule>, components: Array<Rule>, assets: Array<Rule>, motion: Array<Rule>, constraints: Array<Rule>, evidence: Array<Evidence>, uncertainties: Array<Uncertainty>, };
