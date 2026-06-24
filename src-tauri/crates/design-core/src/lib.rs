@@ -1,6 +1,8 @@
+mod markdown;
 mod model;
 mod validation;
 
+pub use markdown::compile_markdown;
 pub use model::{
     DesignSpec, Evidence, EvidenceRegion, Metadata, Platform, Rule, RuleKind, RuleScope,
     RuleSource, RuleStatus, Uncertainty,

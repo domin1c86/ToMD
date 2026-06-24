@@ -1,0 +1,209 @@
+{
+  "metadata": {
+    "schema_version": "1.0",
+    "project_id": "project-accepted",
+    "platform": "web",
+    "provider_id": "provider-a",
+    "model": "vision-model",
+    "source_screenshot_ids": [
+      "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+    ],
+    "excluded_terms": [
+      "OriginalBrand"
+    ],
+    "created_at": "2026-06-23T12:00:00Z"
+  },
+  "intent": [
+    {
+      "id": "00000000-0000-4000-8000-000000000011",
+      "category": "visual principles",
+      "statement": "Use spacing and contrast to separate dense content groups before adding decorative frames.",
+      "kind": "recommendation",
+      "scope": "global",
+      "value": null,
+      "evidence_ids": [],
+      "confidence": 0.88,
+      "status": "accepted",
+      "source": "model"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "category": "design intent",
+      "statement": "Prefer calm, utility-first surfaces with a clear task hierarchy.",
+      "kind": "pattern",
+      "scope": "global",
+      "value": null,
+      "evidence_ids": [],
+      "confidence": 0.91,
+      "status": "accepted",
+      "source": "model"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000012",
+      "category": "design intent",
+      "statement": "OriginalBrand product copy may appear in source screenshots only.",
+      "kind": "observation",
+      "scope": "global",
+      "value": null,
+      "evidence_ids": [],
+      "confidence": 0.95,
+      "status": "pending",
+      "source": "model"
+    }
+  ],
+  "tokens": [
+    {
+      "id": "00000000-0000-4000-8000-000000000021",
+      "category": "color",
+      "statement": "Use the primary action color only for interactive emphasis.",
+      "kind": "pattern",
+      "scope": "global",
+      "value": {
+        "role": "primary_action",
+        "hex": "#2563EB"
+      },
+      "evidence_ids": [],
+      "confidence": 0.94,
+      "status": "accepted",
+      "source": "model"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000022",
+      "category": "typography",
+      "statement": "Use a compact type scale with generous line-height for dense data.",
+      "kind": "pattern",
+      "scope": "global",
+      "value": {
+        "role": "body",
+        "size_px": 16,
+        "line_height": 1.5
+      },
+      "evidence_ids": [],
+      "confidence": 0.86,
+      "status": "edited",
+      "source": "user"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000023",
+      "category": "spacing",
+      "statement": "Use an 8 px spacing rhythm for adjacent controls.",
+      "kind": "pattern",
+      "scope": "global",
+      "value": {
+        "base_px": 8
+      },
+      "evidence_ids": [],
+      "confidence": 0.9,
+      "status": "accepted",
+      "source": "model"
+    }
+  ],
+  "layout": [
+    {
+      "id": "00000000-0000-4000-8000-000000000031",
+      "category": "layout",
+      "statement": "Place primary actions in the upper-right of desktop layouts.",
+      "kind": "recommendation",
+      "scope": "platform",
+      "value": null,
+      "evidence_ids": [],
+      "confidence": 0.82,
+      "status": "accepted",
+      "source": "model"
+    }
+  ],
+  "components": [
+    {
+      "id": "00000000-0000-4000-8000-000000000041",
+      "category": "cards",
+      "statement": "Use soft containers for grouped metrics without heavy borders.",
+      "kind": "pattern",
+      "scope": "component",
+      "value": null,
+      "evidence_ids": [],
+      "confidence": 0.84,
+      "status": "accepted",
+      "source": "model"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000042",
+      "category": "cards",
+      "statement": "Use compact card headers with the label before the value.",
+      "kind": "recommendation",
+      "scope": "component",
+      "value": null,
+      "evidence_ids": [],
+      "confidence": 0.91,
+      "status": "edited",
+      "source": "user"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000043",
+      "category": "cards",
+      "statement": "This rejected rule must not appear.",
+      "kind": "recommendation",
+      "scope": "component",
+      "value": null,
+      "evidence_ids": [],
+      "confidence": 0.99,
+      "status": "rejected",
+      "source": "model"
+    }
+  ],
+  "assets": [
+    {
+      "id": "00000000-0000-4000-8000-000000000051",
+      "category": "icons",
+      "statement": "Prefer simple line icons with rounded stroke endings.",
+      "kind": "pattern",
+      "scope": "global",
+      "value": null,
+      "evidence_ids": [],
+      "confidence": 0.8,
+      "status": "accepted",
+      "source": "model"
+    }
+  ],
+  "motion": [
+    {
+      "id": "00000000-0000-4000-8000-000000000061",
+      "category": "states",
+      "statement": "Show state changes through subtle color and shadow shifts.",
+      "kind": "recommendation",
+      "scope": "component",
+      "value": null,
+      "evidence_ids": [],
+      "confidence": 0.83,
+      "status": "accepted",
+      "source": "model"
+    }
+  ],
+  "constraints": [
+    {
+      "id": "00000000-0000-4000-8000-000000000071",
+      "category": "do",
+      "statement": "Keep primary actions visually distinct from secondary actions.",
+      "kind": "recommendation",
+      "scope": "global",
+      "value": null,
+      "evidence_ids": [],
+      "confidence": 0.93,
+      "status": "accepted",
+      "source": "model"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000072",
+      "category": "don't",
+      "statement": "Do not use ornamental backgrounds that compete with task content.",
+      "kind": "recommendation",
+      "scope": "global",
+      "value": null,
+      "evidence_ids": [],
+      "confidence": 0.89,
+      "status": "edited",
+      "source": "user"
+    }
+  ],
+  "evidence": [],
+  "uncertainties": []
+}

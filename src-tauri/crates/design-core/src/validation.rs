@@ -27,6 +27,8 @@ pub enum ValidationIssue {
     MissingEvidence { owner_id: Uuid, evidence_id: Uuid },
     #[error("evidence {evidence_id} has an invalid normalized region")]
     InvalidRegion { evidence_id: Uuid },
+    #[error("rule {rule_id} contains excluded term {term:?}")]
+    ExcludedTermInRule { rule_id: Uuid, term: String },
 }
 
 pub(crate) fn validate(spec: &DesignSpec) -> Result<(), ValidationError> {
