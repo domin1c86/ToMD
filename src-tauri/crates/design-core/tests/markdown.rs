@@ -30,6 +30,41 @@ fn rejects_exportable_statements_containing_excluded_terms() {
 }
 
 #[test]
+fn rejects_exportable_categories_containing_excluded_terms() {
+    let mut spec: DesignSpec =
+        serde_json::from_str(include_str!("fixtures/accepted-spec.json")).unwrap();
+    spec.tokens[0].category = "OriginalBrand colors".to_owned();
+
+    let error = compile_markdown(&spec).unwrap_err();
+
+    assert!(error.issues.iter().any(|issue| {
+        matches!(
+            issue,
+            ValidationIssue::ExcludedTermInRule { term, .. } if term == "OriginalBrand"
+        )
+    }));
+}
+
+#[test]
+fn rejects_exportable_values_containing_excluded_terms() {
+    let mut spec: DesignSpec =
+        serde_json::from_str(include_str!("fixtures/accepted-spec.json")).unwrap();
+    spec.tokens[0].value = Some(json!({
+        "brand": "OriginalBrand",
+        "role": "primary_action"
+    }));
+
+    let error = compile_markdown(&spec).unwrap_err();
+
+    assert!(error.issues.iter().any(|issue| {
+        matches!(
+            issue,
+            ValidationIssue::ExcludedTermInRule { term, .. } if term == "OriginalBrand"
+        )
+    }));
+}
+
+#[test]
 fn sanitizes_statement_newlines_that_would_create_extra_headings() {
     let mut spec: DesignSpec =
         serde_json::from_str(include_str!("fixtures/accepted-spec.json")).unwrap();

@@ -1,4 +1,4 @@
-use std::cmp::Ordering;
+use std::{borrow::Cow, cmp::Ordering};
 
 use serde_json::Value;
 
@@ -79,18 +79,20 @@ fn reject_excluded_terms(spec: &DesignSpec) -> Result<(), ValidationError> {
         return Ok(());
     }
 
-    let issues = all_rules(spec)
-        .filter(|rule| rule.is_exportable())
-        .flat_map(|rule| {
-            excluded_terms
-                .iter()
-                .filter(move |term| rule.statement.contains(term.as_str()))
-                .map(move |term| ValidationIssue::ExcludedTermInRule {
-                    rule_id: rule.id,
-                    term: (*term).clone(),
-                })
-        })
-        .collect::<Vec<_>>();
+    let mut issues = Vec::new();
+    for rule in all_rules(spec).filter(|rule| rule.is_exportable()) {
+        for exported_text in exported_rule_text(rule) {
+            issues.extend(
+                excluded_terms
+                    .iter()
+                    .filter(|term| exported_text.contains(term.as_str()))
+                    .map(|term| ValidationIssue::ExcludedTermInRule {
+                        rule_id: rule.id,
+                        term: (*term).clone(),
+                    }),
+            );
+        }
+    }
 
     if issues.is_empty() {
         Ok(())
@@ -112,6 +114,19 @@ fn all_rules(spec: &DesignSpec) -> impl Iterator<Item = &Rule> {
 
 fn exportable_rules(rules: &[Rule]) -> Vec<&Rule> {
     rules.iter().filter(|rule| rule.is_exportable()).collect()
+}
+
+fn exported_rule_text(rule: &Rule) -> Vec<Cow<'_, str>> {
+    let mut text = vec![
+        Cow::Borrowed(rule.statement.as_str()),
+        Cow::Borrowed(rule.category.as_str()),
+    ];
+
+    if let Some(value) = &rule.value {
+        text.push(Cow::Owned(render_value(value)));
+    }
+
+    text
 }
 
 fn sort_rules(rules: &mut [&Rule]) {
