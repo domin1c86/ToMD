@@ -136,16 +136,16 @@ fn push_rule_section(output: &mut String, title: &str, rules: &[&Rule]) {
 
     for rule in rules {
         output.push_str("- **");
-        output.push_str(&rule.category);
+        output.push_str(&render_markdown_text(&rule.category));
         output.push_str("** (");
         output.push_str(rule_kind_label(rule.kind));
         output.push_str(", confidence ");
         output.push_str(&format!("{:.2}", rule.confidence));
         output.push_str("): ");
-        output.push_str(&rule.statement);
+        output.push_str(&render_markdown_text(&rule.statement));
         if let Some(value) = &rule.value {
             output.push_str(" Value: `");
-            output.push_str(&render_value(value));
+            output.push_str(&render_inline_code_text(&render_value(value)));
             output.push('`');
         }
         output.push('\n');
@@ -161,7 +161,7 @@ fn push_checklist_section(output: &mut String, constraints: &[&Rule]) {
 
     for constraint in constraints {
         output.push_str("- [ ] ");
-        output.push_str(&constraint.statement);
+        output.push_str(&render_markdown_text(&constraint.statement));
         output.push('\n');
     }
 }
@@ -189,4 +189,29 @@ fn rule_kind_label(kind: RuleKind) -> &'static str {
 
 fn render_value(value: &Value) -> String {
     serde_json::to_string(value).expect("serializing serde_json::Value cannot fail")
+}
+
+fn render_markdown_text(input: &str) -> String {
+    let normalized = normalize_control_whitespace(input);
+    let mut escaped = String::with_capacity(normalized.len());
+
+    for character in normalized.chars() {
+        if matches!(
+            character,
+            '\\' | '`' | '*' | '_' | '[' | ']' | '(' | ')' | '<' | '>' | '|'
+        ) {
+            escaped.push('\\');
+        }
+        escaped.push(character);
+    }
+
+    escaped
+}
+
+fn render_inline_code_text(input: &str) -> String {
+    normalize_control_whitespace(input).replace('`', "'")
+}
+
+fn normalize_control_whitespace(input: &str) -> String {
+    input.split_whitespace().collect::<Vec<_>>().join(" ")
 }
