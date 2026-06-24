@@ -144,9 +144,8 @@ fn push_rule_section(output: &mut String, title: &str, rules: &[&Rule]) {
         output.push_str("): ");
         output.push_str(&render_markdown_text(&rule.statement));
         if let Some(value) = &rule.value {
-            output.push_str(" Value: `");
-            output.push_str(&render_inline_code_text(&render_value(value)));
-            output.push('`');
+            output.push_str(" Value: ");
+            output.push_str(&render_code_span(&render_value(value)));
         }
         output.push('\n');
     }
@@ -208,8 +207,25 @@ fn render_markdown_text(input: &str) -> String {
     escaped
 }
 
-fn render_inline_code_text(input: &str) -> String {
-    normalize_control_whitespace(input).replace('`', "'")
+fn render_code_span(input: &str) -> String {
+    let delimiter = "`".repeat(longest_backtick_run(input) + 1);
+    format!("{delimiter}{input}{delimiter}")
+}
+
+fn longest_backtick_run(input: &str) -> usize {
+    let mut longest = 0;
+    let mut current = 0;
+
+    for character in input.chars() {
+        if character == '`' {
+            current += 1;
+            longest = longest.max(current);
+        } else {
+            current = 0;
+        }
+    }
+
+    longest
 }
 
 fn normalize_control_whitespace(input: &str) -> String {

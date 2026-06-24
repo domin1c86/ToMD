@@ -1,4 +1,5 @@
 use design_core::{compile_markdown, DesignSpec, ValidationIssue};
+use serde_json::json;
 
 #[test]
 fn compiles_only_confirmed_rules_in_fixed_section_order() {
@@ -62,6 +63,28 @@ fn sanitizes_checklist_newlines_that_would_create_extra_items() {
     assert!(checklist.contains(
         "- [ ] Keep primary actions clear. - \\[ \\] Injected checklist item # Extra section"
     ));
+}
+
+#[test]
+fn preserves_serialized_token_values_inside_safe_code_spans() {
+    let mut spec: DesignSpec =
+        serde_json::from_str(include_str!("fixtures/accepted-spec.json")).unwrap();
+    spec.tokens[0].value = Some(json!({
+        "role": "literal_token",
+        "sample": "Use `inline` and ```fence``` markers",
+        "spacing": "keep  two   spaces",
+        "line": "first\nsecond"
+    }));
+    let serialized = serde_json::to_string(spec.tokens[0].value.as_ref().unwrap()).unwrap();
+
+    let output = compile_markdown(&spec).unwrap();
+
+    assert!(serialized.contains('`'));
+    assert!(serialized.contains("  "));
+    assert!(serialized.contains("\\n"));
+    assert!(output.contains(&format!("Value: ````{serialized}````")));
+    assert!(!output.contains("Use 'inline'"));
+    assert!(!output.contains("keep two spaces"));
 }
 
 fn count_top_level_headings(markdown: &str) -> usize {
