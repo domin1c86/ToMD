@@ -65,6 +65,41 @@ fn rejects_exportable_values_containing_excluded_terms() {
 }
 
 #[test]
+fn rejects_statement_excluded_terms_after_prose_whitespace_normalization() {
+    let mut spec: DesignSpec =
+        serde_json::from_str(include_str!("fixtures/accepted-spec.json")).unwrap();
+    spec.metadata.excluded_terms = vec!["Original Brand".to_owned()];
+    spec.intent[0].statement =
+        "Do not copy Original\n\t   Brand visual motifs into the export.".to_owned();
+
+    let error = compile_markdown(&spec).unwrap_err();
+
+    assert!(error.issues.iter().any(|issue| {
+        matches!(
+            issue,
+            ValidationIssue::ExcludedTermInRule { term, .. } if term == "Original Brand"
+        )
+    }));
+}
+
+#[test]
+fn rejects_category_excluded_terms_after_prose_whitespace_normalization() {
+    let mut spec: DesignSpec =
+        serde_json::from_str(include_str!("fixtures/accepted-spec.json")).unwrap();
+    spec.metadata.excluded_terms = vec!["Original Brand".to_owned()];
+    spec.tokens[0].category = "Original\n   Brand colors".to_owned();
+
+    let error = compile_markdown(&spec).unwrap_err();
+
+    assert!(error.issues.iter().any(|issue| {
+        matches!(
+            issue,
+            ValidationIssue::ExcludedTermInRule { term, .. } if term == "Original Brand"
+        )
+    }));
+}
+
+#[test]
 fn sanitizes_statement_newlines_that_would_create_extra_headings() {
     let mut spec: DesignSpec =
         serde_json::from_str(include_str!("fixtures/accepted-spec.json")).unwrap();
