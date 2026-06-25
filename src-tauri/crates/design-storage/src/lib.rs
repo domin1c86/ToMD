@@ -1,5 +1,6 @@
 mod migrations;
 mod projects;
+mod screenshots;
 
 use std::{
     fs,
@@ -11,6 +12,7 @@ use rusqlite::Connection;
 use thiserror::Error;
 
 pub use projects::{Project, ProjectRepository, SqliteProjectRepository};
+pub use screenshots::{Screenshot, ScreenshotRepository, SqliteScreenshotRepository};
 
 #[derive(Debug, Clone)]
 pub struct Storage {
@@ -36,6 +38,10 @@ impl Storage {
     pub fn projects(&self) -> SqliteProjectRepository {
         SqliteProjectRepository::new(Arc::clone(&self.root), Arc::clone(&self.db_path))
     }
+
+    pub fn screenshots(&self) -> SqliteScreenshotRepository {
+        SqliteScreenshotRepository::new(Arc::clone(&self.root), Arc::clone(&self.db_path))
+    }
 }
 
 #[derive(Debug, Error)]
@@ -50,6 +56,20 @@ pub enum StorageError {
     ProjectNotFound(uuid::Uuid),
     #[error("stored platform value is not recognized: {0}")]
     InvalidPlatform(String),
+    #[error("screenshot media type is not supported")]
+    UnsupportedMediaType,
+    #[error("screenshot image data is corrupt or unreadable")]
+    CorruptImage,
+    #[error("screenshot source file exceeds the maximum size")]
+    FileTooLarge { size: u64, max: u64 },
+    #[error("screenshot dimensions exceed the maximum size")]
+    ImageTooLarge { width: u32, height: u32, max: u32 },
+    #[error("screenshot duplicates existing screenshot {0}")]
+    DuplicateScreenshot(uuid::Uuid),
+    #[error("screenshot {0} was not found")]
+    ScreenshotNotFound(uuid::Uuid),
+    #[error("stored design spec JSON is invalid")]
+    Json(#[from] serde_json::Error),
     #[error("project cleanup is required at {path}")]
     CleanupRequired {
         path: PathBuf,
