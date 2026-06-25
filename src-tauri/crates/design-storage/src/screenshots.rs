@@ -90,13 +90,6 @@ impl ScreenshotRepository for SqliteScreenshotRepository {
 
             let bytes = fs::read(&source)?;
             let image_metadata = detect_image_metadata(&bytes)?;
-            if image_metadata.width > MAX_DIMENSION || image_metadata.height > MAX_DIMENSION {
-                return Err(StorageError::ImageTooLarge {
-                    width: image_metadata.width,
-                    height: image_metadata.height,
-                    max: MAX_DIMENSION,
-                });
-            }
 
             let sha256 = hex_sha256(&bytes);
             let mut connection = open_connection(&db_path)?;
@@ -236,12 +229,23 @@ fn detect_image_metadata(bytes: &[u8]) -> Result<ImageMetadata, StorageError> {
     let (width, height) = reader
         .into_dimensions()
         .map_err(|_| StorageError::CorruptImage)?;
+    if width > MAX_DIMENSION || height > MAX_DIMENSION {
+        return Err(StorageError::ImageTooLarge {
+            width,
+            height,
+            max: MAX_DIMENSION,
+        });
+    }
+
+    let decoded = ImageReader::with_format(Cursor::new(bytes), format)
+        .decode()
+        .map_err(|_| StorageError::CorruptImage)?;
 
     Ok(ImageMetadata {
         extension,
         media_type,
-        width,
-        height,
+        width: decoded.width(),
+        height: decoded.height(),
     })
 }
 

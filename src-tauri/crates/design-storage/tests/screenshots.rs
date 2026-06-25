@@ -1,9 +1,12 @@
+use std::fs;
+
 use chrono::Utc;
 use design_core::{
     DesignSpec, Evidence, Platform, Rule, RuleKind, RuleScope, RuleSource, RuleStatus,
 };
 use design_storage::{ProjectRepository, ScreenshotRepository, Storage, StorageError};
 use rusqlite::{params, Connection};
+use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
 const VALID_PNG: &str = "tests/fixtures/valid.png";
@@ -29,6 +32,12 @@ async fn imports_a_copy_with_detected_dimensions_and_hash() {
         )
         .await
         .unwrap();
+    let source_bytes = fs::read(fixture_path(VALID_PNG)).unwrap();
+    let destination = temp
+        .path()
+        .join("projects")
+        .join(project.id.to_string())
+        .join(&screenshot.relative_path);
 
     assert_eq!(screenshot.project_id, project.id);
     assert_eq!(screenshot.media_type, "image/png");
@@ -37,17 +46,12 @@ async fn imports_a_copy_with_detected_dimensions_and_hash() {
     assert_eq!(screenshot.page_name, "Home");
     assert_eq!(screenshot.scene, "Empty state");
     assert_eq!(screenshot.sort_order, 0);
-    assert_eq!(screenshot.sha256.len(), 64);
+    assert_eq!(screenshot.sha256, sha256_hex(&source_bytes));
     assert_eq!(
         screenshot.relative_path,
         format!("screenshots/{}.png", screenshot.id)
     );
-    assert!(temp
-        .path()
-        .join("projects")
-        .join(project.id.to_string())
-        .join(&screenshot.relative_path)
-        .exists());
+    assert_eq!(fs::read(destination).unwrap(), source_bytes);
 }
 
 #[tokio::test]
@@ -72,6 +76,44 @@ async fn rejects_unsupported_or_corrupt_files_without_copying_them() {
         .unwrap_err();
 
     assert!(matches!(error, StorageError::UnsupportedMediaType));
+    let connection = Connection::open(temp.path().join("design-storage.sqlite3")).unwrap();
+    let count: i64 = connection
+        .query_row(
+            "SELECT COUNT(*) FROM screenshots WHERE project_id = ?1",
+            params![project.id.to_string()],
+            |row| row.get(0),
+        )
+        .unwrap();
+    assert_eq!(count, 0);
+    assert!(!temp
+        .path()
+        .join("projects")
+        .join(project.id.to_string())
+        .join("screenshots")
+        .exists());
+}
+
+#[tokio::test]
+async fn rejects_corrupt_supported_images_without_copying_them() {
+    let temp = tempfile::tempdir().unwrap();
+    let storage = Storage::open(temp.path()).await.unwrap();
+    let project = storage
+        .projects()
+        .create("Finance app", Platform::Mobile)
+        .await
+        .unwrap();
+    let corrupt_png = temp.path().join("corrupt.png");
+    let mut bytes = fs::read(fixture_path(VALID_PNG)).unwrap();
+    bytes[41] ^= 0xFF;
+    fs::write(&corrupt_png, bytes).unwrap();
+
+    let error = storage
+        .screenshots()
+        .import_screenshot(project.id, &corrupt_png, "Home", "Corrupt PNG")
+        .await
+        .unwrap_err();
+
+    assert!(matches!(error, StorageError::CorruptImage));
     let connection = Connection::open(temp.path().join("design-storage.sqlite3")).unwrap();
     let count: i64 = connection
         .query_row(
@@ -228,6 +270,11 @@ async fn removing_a_screenshot_marks_dependent_rules_for_review() {
 
 fn fixture_path(relative: &str) -> std::path::PathBuf {
     std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(relative)
+}
+
+fn sha256_hex(bytes: &[u8]) -> String {
+    let digest = Sha256::digest(bytes);
+    digest.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
 fn rule_with_status(id: Uuid, evidence_id: Uuid, status: RuleStatus) -> Rule {
