@@ -197,6 +197,55 @@ async fn rejects_duplicate_hashes_within_the_same_project() {
 }
 
 #[tokio::test]
+async fn concurrent_duplicate_imports_return_duplicate_screenshot() {
+    let temp = tempfile::tempdir().unwrap();
+    let storage = Storage::open(temp.path()).await.unwrap();
+    let project = storage
+        .projects()
+        .create("Finance app", Platform::Mobile)
+        .await
+        .unwrap();
+    let source = fixture_path(VALID_PNG);
+    let first_source = source.clone();
+    let second_source = source;
+    let first_storage = storage.clone();
+    let second_storage = storage.clone();
+
+    let (first, second) = tokio::join!(
+        async {
+            first_storage
+                .screenshots()
+                .import_screenshot(project.id, &first_source, "Home", "Concurrent A")
+                .await
+        },
+        async {
+            second_storage
+                .screenshots()
+                .import_screenshot(project.id, &second_source, "Home", "Concurrent B")
+                .await
+        }
+    );
+
+    let results = [first, second];
+    let successes = results.iter().filter(|result| result.is_ok()).count();
+    let duplicate_errors = results
+        .iter()
+        .filter(|result| matches!(result, Err(StorageError::DuplicateScreenshot(_))))
+        .count();
+    assert_eq!(successes, 1);
+    assert_eq!(duplicate_errors, 1);
+    let connection = Connection::open(temp.path().join("design-storage.sqlite3")).unwrap();
+    let count: i64 = connection
+        .query_row(
+            "SELECT COUNT(*) FROM screenshots WHERE project_id = ?1",
+            params![project.id.to_string()],
+            |row| row.get(0),
+        )
+        .unwrap();
+    assert_eq!(count, 1);
+}
+
+#[tokio::test]
 async fn rejects_images_that_exceed_decoded_pixel_budget_without_copying_them() {
     let temp = tempfile::tempdir().unwrap();
     let storage = Storage::open(temp.path()).await.unwrap();
@@ -328,6 +377,45 @@ async fn removing_a_screenshot_marks_dependent_rules_for_review() {
         .join(project.id.to_string())
         .join(&screenshot.relative_path)
         .exists());
+}
+
+#[tokio::test]
+async fn removing_a_screenshot_rejects_unsafe_stored_relative_paths() {
+    let temp = tempfile::tempdir().unwrap();
+    let storage = Storage::open(temp.path()).await.unwrap();
+    let project = storage
+        .projects()
+        .create("Finance app", Platform::Mobile)
+        .await
+        .unwrap();
+    let screenshot = storage
+        .screenshots()
+        .import_screenshot(
+            project.id,
+            fixture_path(VALID_PNG).as_path(),
+            "Home",
+            "Default",
+        )
+        .await
+        .unwrap();
+    let outside = temp.path().join("projects").join("outside.txt");
+    fs::write(&outside, "must survive").unwrap();
+    let connection = Connection::open(temp.path().join("design-storage.sqlite3")).unwrap();
+    connection
+        .execute(
+            "UPDATE screenshots SET relative_path = ?1 WHERE id = ?2",
+            params!["../outside.txt", screenshot.id.to_string()],
+        )
+        .unwrap();
+
+    let error = storage
+        .screenshots()
+        .remove_screenshot(project.id, screenshot.id)
+        .await
+        .unwrap_err();
+
+    assert!(matches!(error, StorageError::UnsafeScreenshotPath(_)));
+    assert_eq!(fs::read_to_string(outside).unwrap(), "must survive");
 }
 
 fn fixture_path(relative: &str) -> std::path::PathBuf {

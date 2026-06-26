@@ -68,6 +68,8 @@ pub enum StorageError {
     DuplicateScreenshot(uuid::Uuid),
     #[error("screenshot {0} was not found")]
     ScreenshotNotFound(uuid::Uuid),
+    #[error("stored screenshot path is unsafe: {0}")]
+    UnsafeScreenshotPath(String),
     #[error("stored design spec JSON is invalid")]
     Json(#[from] serde_json::Error),
     #[error("project cleanup is required at {path}")]

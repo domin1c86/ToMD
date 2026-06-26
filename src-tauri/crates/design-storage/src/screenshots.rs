@@ -1,14 +1,14 @@
 use std::{
     fs,
     io::Cursor,
-    path::{Path, PathBuf},
+    path::{Component, Path, PathBuf},
     sync::Arc,
 };
 
 use chrono::{DateTime, Utc};
 use design_core::{DesignSpec, Rule, RuleStatus};
 use image::{ImageFormat, ImageReader};
-use rusqlite::{params, ErrorCode, OptionalExtension, Transaction};
+use rusqlite::{params, ErrorCode, OptionalExtension, Transaction, TransactionBehavior};
 use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
@@ -94,7 +94,8 @@ impl ScreenshotRepository for SqliteScreenshotRepository {
 
             let sha256 = hex_sha256(&bytes);
             let mut connection = open_connection(&db_path)?;
-            let transaction = connection.transaction()?;
+            let transaction =
+                connection.transaction_with_behavior(TransactionBehavior::Immediate)?;
             ensure_project_exists(&transaction, project_id)?;
 
             if let Some(existing_id) =
@@ -194,6 +195,7 @@ impl ScreenshotRepository for SqliteScreenshotRepository {
                 )
                 .optional()?
                 .ok_or(StorageError::ScreenshotNotFound(screenshot_id))?;
+            let file_path = safe_screenshot_path(&project_dir, &relative_path)?;
 
             mark_dependent_rules_pending(&transaction, project_id, screenshot_id)?;
 
@@ -204,7 +206,6 @@ impl ScreenshotRepository for SqliteScreenshotRepository {
             )?;
             transaction.commit()?;
 
-            let file_path = project_dir.join(relative_path);
             if file_path.exists() {
                 fs::remove_file(&file_path).map_err(|source| StorageError::CleanupRequired {
                     path: file_path,
@@ -326,6 +327,33 @@ fn is_constraint_violation(error: &rusqlite::Error) -> bool {
         rusqlite::Error::SqliteFailure(failure, _)
             if failure.code == ErrorCode::ConstraintViolation
     )
+}
+
+fn safe_screenshot_path(project_dir: &Path, relative_path: &str) -> Result<PathBuf, StorageError> {
+    let relative = Path::new(relative_path);
+    if relative.is_absolute() {
+        return Err(StorageError::UnsafeScreenshotPath(relative_path.to_owned()));
+    }
+
+    let mut components = relative.components();
+    match components.next() {
+        Some(Component::Normal(directory)) if directory == "screenshots" => {}
+        _ => return Err(StorageError::UnsafeScreenshotPath(relative_path.to_owned())),
+    }
+
+    let mut has_leaf = false;
+    for component in components {
+        match component {
+            Component::Normal(_) => has_leaf = true,
+            _ => return Err(StorageError::UnsafeScreenshotPath(relative_path.to_owned())),
+        }
+    }
+
+    if !has_leaf {
+        return Err(StorageError::UnsafeScreenshotPath(relative_path.to_owned()));
+    }
+
+    Ok(project_dir.join(relative))
 }
 
 fn mark_dependent_rules_pending(
