@@ -8,7 +8,7 @@ use std::{
 use chrono::{DateTime, Utc};
 use design_core::{DesignSpec, Rule, RuleStatus};
 use image::{ImageFormat, ImageReader};
-use rusqlite::{params, OptionalExtension, Transaction};
+use rusqlite::{params, ErrorCode, OptionalExtension, Transaction};
 use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
@@ -16,6 +16,7 @@ use crate::{open_connection, StorageError};
 
 const MAX_SOURCE_BYTES: u64 = 25 * 1024 * 1024;
 const MAX_DIMENSION: u32 = 16_384;
+const MAX_DECODED_PIXELS: u64 = 16_777_216;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Screenshot {
@@ -101,6 +102,7 @@ impl ScreenshotRepository for SqliteScreenshotRepository {
             {
                 return Err(StorageError::DuplicateScreenshot(existing_id));
             }
+            let sort_order = next_sort_order(&transaction, project_id)?;
 
             let screenshot_id = Uuid::new_v4();
             let relative_path = format!("screenshots/{screenshot_id}.{}", image_metadata.extension);
@@ -110,7 +112,6 @@ impl ScreenshotRepository for SqliteScreenshotRepository {
             let final_path = project_dir.join(&relative_path);
             fs::write(&temp_path, &bytes)?;
 
-            let sort_order = next_sort_order(&transaction, project_id)?;
             let created_at = Utc::now();
             let screenshot = Screenshot {
                 id: screenshot_id,
@@ -147,6 +148,13 @@ impl ScreenshotRepository for SqliteScreenshotRepository {
 
             if let Err(error) = insert_result {
                 let _ = fs::remove_file(&temp_path);
+                if is_constraint_violation(&error) {
+                    if let Some(existing_id) =
+                        find_duplicate(&transaction, project_id, screenshot.sha256.as_str())?
+                    {
+                        return Err(StorageError::DuplicateScreenshot(existing_id));
+                    }
+                }
                 return Err(StorageError::from(error));
             }
 
@@ -236,6 +244,13 @@ fn detect_image_metadata(bytes: &[u8]) -> Result<ImageMetadata, StorageError> {
             max: MAX_DIMENSION,
         });
     }
+    if u64::from(width) * u64::from(height) > MAX_DECODED_PIXELS {
+        return Err(StorageError::ImageTooLarge {
+            width,
+            height,
+            max: MAX_DIMENSION,
+        });
+    }
 
     let decoded = ImageReader::with_format(Cursor::new(bytes), format)
         .decode()
@@ -303,6 +318,14 @@ fn next_sort_order(transaction: &Transaction<'_>, project_id: Uuid) -> Result<i6
         |row| row.get(0),
     )?;
     Ok(max_sort_order.map_or(0, |value| value + 1))
+}
+
+fn is_constraint_violation(error: &rusqlite::Error) -> bool {
+    matches!(
+        error,
+        rusqlite::Error::SqliteFailure(failure, _)
+            if failure.code == ErrorCode::ConstraintViolation
+    )
 }
 
 fn mark_dependent_rules_pending(

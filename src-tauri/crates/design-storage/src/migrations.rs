@@ -28,6 +28,9 @@ CREATE TABLE IF NOT EXISTS screenshots (
   created_at TEXT NOT NULL
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_screenshots_project_sha256
+ON screenshots(project_id, sha256);
+
 CREATE TABLE IF NOT EXISTS design_spec_versions (
   id TEXT PRIMARY KEY,
   project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
