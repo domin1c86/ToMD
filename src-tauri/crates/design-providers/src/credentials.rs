@@ -1,5 +1,6 @@
 use std::{
     collections::HashMap,
+    fmt,
     sync::{Arc, Mutex},
 };
 
@@ -38,15 +39,29 @@ pub trait CredentialStore: Send + Sync {
 pub enum CredentialStoreError {
     #[error("credential reference is invalid: {0}")]
     InvalidCredentialRef(String),
+    #[error("credential already exists")]
+    CredentialAlreadyExists,
+    #[error("credential was not found")]
+    CredentialNotFound,
     #[error("credential store lock was poisoned")]
     LockPoisoned,
     #[error("operating-system credential store failed")]
     Keyring(#[from] keyring::Error),
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Clone, Default)]
 pub struct MemoryCredentialStore {
     secrets: Arc<Mutex<HashMap<(String, String), String>>>,
+}
+
+impl fmt::Debug for MemoryCredentialStore {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let secret_count = self.secrets.lock().map(|secrets| secrets.len()).ok();
+        formatter
+            .debug_struct("MemoryCredentialStore")
+            .field("secret_count", &secret_count)
+            .finish()
+    }
 }
 
 impl CredentialStore for MemoryCredentialStore {
@@ -56,7 +71,17 @@ impl CredentialStore for MemoryCredentialStore {
         username: &str,
         secret: &str,
     ) -> Result<(), CredentialStoreError> {
-        self.set_secret(service, username, secret)
+        let mut secrets = self
+            .secrets
+            .lock()
+            .map_err(|_| CredentialStoreError::LockPoisoned)?;
+        let key = (service.to_owned(), username.to_owned());
+        if secrets.contains_key(&key) {
+            return Err(CredentialStoreError::CredentialAlreadyExists);
+        }
+
+        secrets.insert(key, secret.to_owned());
+        Ok(())
     }
 
     fn replace_secret(
@@ -65,7 +90,17 @@ impl CredentialStore for MemoryCredentialStore {
         username: &str,
         secret: &str,
     ) -> Result<(), CredentialStoreError> {
-        self.set_secret(service, username, secret)
+        let mut secrets = self
+            .secrets
+            .lock()
+            .map_err(|_| CredentialStoreError::LockPoisoned)?;
+        let key = (service.to_owned(), username.to_owned());
+        if !secrets.contains_key(&key) {
+            return Err(CredentialStoreError::CredentialNotFound);
+        }
+
+        secrets.insert(key, secret.to_owned());
+        Ok(())
     }
 
     fn read_secret(
@@ -90,21 +125,6 @@ impl CredentialStore for MemoryCredentialStore {
     }
 }
 
-impl MemoryCredentialStore {
-    fn set_secret(
-        &self,
-        service: &str,
-        username: &str,
-        secret: &str,
-    ) -> Result<(), CredentialStoreError> {
-        self.secrets
-            .lock()
-            .map_err(|_| CredentialStoreError::LockPoisoned)?
-            .insert((service.to_owned(), username.to_owned()), secret.to_owned());
-        Ok(())
-    }
-}
-
 #[derive(Debug, Clone, Copy, Default)]
 pub struct KeyringCredentialStore;
 
@@ -115,6 +135,10 @@ impl CredentialStore for KeyringCredentialStore {
         username: &str,
         secret: &str,
     ) -> Result<(), CredentialStoreError> {
+        if self.read_secret(service, username)?.is_some() {
+            return Err(CredentialStoreError::CredentialAlreadyExists);
+        }
+
         keyring::Entry::new(service, username)?.set_password(secret)?;
         Ok(())
     }
@@ -125,6 +149,10 @@ impl CredentialStore for KeyringCredentialStore {
         username: &str,
         secret: &str,
     ) -> Result<(), CredentialStoreError> {
+        if self.read_secret(service, username)?.is_none() {
+            return Err(CredentialStoreError::CredentialNotFound);
+        }
+
         keyring::Entry::new(service, username)?.set_password(secret)?;
         Ok(())
     }
