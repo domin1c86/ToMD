@@ -90,6 +90,13 @@ impl ScreenshotRepository for SqliteScreenshotRepository {
             }
 
             let bytes = fs::read(&source)?;
+            let source_size = bytes.len() as u64;
+            if source_size > MAX_SOURCE_BYTES {
+                return Err(StorageError::FileTooLarge {
+                    size: source_size,
+                    max: MAX_SOURCE_BYTES,
+                });
+            }
             let image_metadata = detect_image_metadata(&bytes)?;
 
             let sha256 = hex_sha256(&bytes);
@@ -107,10 +114,10 @@ impl ScreenshotRepository for SqliteScreenshotRepository {
 
             let screenshot_id = Uuid::new_v4();
             let relative_path = format!("screenshots/{screenshot_id}.{}", image_metadata.extension);
-            let screenshots_dir = project_dir.join("screenshots");
-            fs::create_dir_all(&screenshots_dir)?;
+            let screenshots_dir = ensure_safe_screenshots_dir(&project_dir, true)?
+                .expect("screenshots directory exists after creation");
             let temp_path = screenshots_dir.join(format!(".{screenshot_id}.tmp"));
-            let final_path = project_dir.join(&relative_path);
+            let final_path = screenshots_dir.join(format!("{screenshot_id}.{}", image_metadata.extension));
             fs::write(&temp_path, &bytes)?;
 
             let created_at = Utc::now();
@@ -341,10 +348,14 @@ fn safe_screenshot_path(project_dir: &Path, relative_path: &str) -> Result<PathB
         _ => return Err(StorageError::UnsafeScreenshotPath(relative_path.to_owned())),
     }
 
+    let mut tail = PathBuf::new();
     let mut has_leaf = false;
     for component in components {
         match component {
-            Component::Normal(_) => has_leaf = true,
+            Component::Normal(name) => {
+                tail.push(name);
+                has_leaf = true;
+            }
             _ => return Err(StorageError::UnsafeScreenshotPath(relative_path.to_owned())),
         }
     }
@@ -353,7 +364,91 @@ fn safe_screenshot_path(project_dir: &Path, relative_path: &str) -> Result<PathB
         return Err(StorageError::UnsafeScreenshotPath(relative_path.to_owned()));
     }
 
-    Ok(project_dir.join(relative))
+    let Some(screenshots_dir) = ensure_safe_screenshots_dir(project_dir, false)? else {
+        return Ok(project_dir.join(relative));
+    };
+    let target = screenshots_dir.join(tail);
+
+    if let Ok(metadata) = fs::symlink_metadata(&target) {
+        if is_symlink_or_reparse_point(&metadata) {
+            return Err(StorageError::UnsafeScreenshotPath(relative_path.to_owned()));
+        }
+    }
+
+    if let Some(parent) = target.parent() {
+        if parent.exists() {
+            let canonical_parent = parent.canonicalize()?;
+            if !canonical_parent.starts_with(&screenshots_dir) {
+                return Err(StorageError::UnsafeScreenshotPath(relative_path.to_owned()));
+            }
+        }
+    }
+
+    Ok(target)
+}
+
+fn ensure_safe_screenshots_dir(
+    project_dir: &Path,
+    create_if_missing: bool,
+) -> Result<Option<PathBuf>, StorageError> {
+    reject_symlink_or_reparse_path(project_dir, "project directory")?;
+    let screenshots_dir = project_dir.join("screenshots");
+
+    match fs::symlink_metadata(&screenshots_dir) {
+        Ok(metadata) => {
+            if is_symlink_or_reparse_point(&metadata) || !metadata.is_dir() {
+                return Err(StorageError::UnsafeScreenshotPath(
+                    screenshots_dir.display().to_string(),
+                ));
+            }
+        }
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            if !create_if_missing {
+                return Ok(None);
+            }
+            fs::create_dir_all(&screenshots_dir)?;
+            reject_symlink_or_reparse_path(&screenshots_dir, "screenshots directory")?;
+        }
+        Err(error) => return Err(StorageError::from(error)),
+    }
+
+    let canonical_project = project_dir.canonicalize()?;
+    let canonical_screenshots = screenshots_dir.canonicalize()?;
+    if !canonical_screenshots.starts_with(&canonical_project) {
+        return Err(StorageError::UnsafeScreenshotPath(
+            screenshots_dir.display().to_string(),
+        ));
+    }
+
+    Ok(Some(canonical_screenshots))
+}
+
+fn reject_symlink_or_reparse_path(path: &Path, label: &str) -> Result<(), StorageError> {
+    let metadata = fs::symlink_metadata(path)?;
+    if is_symlink_or_reparse_point(&metadata) {
+        return Err(StorageError::UnsafeScreenshotPath(format!(
+            "{label}: {}",
+            path.display()
+        )));
+    }
+    Ok(())
+}
+
+fn is_symlink_or_reparse_point(metadata: &fs::Metadata) -> bool {
+    metadata.file_type().is_symlink() || has_reparse_point(metadata)
+}
+
+#[cfg(windows)]
+fn has_reparse_point(metadata: &fs::Metadata) -> bool {
+    use std::os::windows::fs::MetadataExt;
+
+    const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x400;
+    metadata.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0
+}
+
+#[cfg(not(windows))]
+fn has_reparse_point(_metadata: &fs::Metadata) -> bool {
+    false
 }
 
 fn mark_dependent_rules_pending(

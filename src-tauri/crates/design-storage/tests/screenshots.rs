@@ -1,4 +1,6 @@
 use std::fs;
+use std::io;
+use std::path::Path;
 
 use chrono::Utc;
 use design_core::{
@@ -52,6 +54,37 @@ async fn imports_a_copy_with_detected_dimensions_and_hash() {
         format!("screenshots/{}.png", screenshot.id)
     );
     assert_eq!(fs::read(destination).unwrap(), source_bytes);
+}
+
+#[tokio::test]
+async fn import_rejects_symlinked_screenshots_directory() {
+    let temp = tempfile::tempdir().unwrap();
+    let storage = Storage::open(temp.path()).await.unwrap();
+    let project = storage
+        .projects()
+        .create("Finance app", Platform::Mobile)
+        .await
+        .unwrap();
+    let project_dir = temp.path().join("projects").join(project.id.to_string());
+    let outside = temp.path().join("outside-screenshots");
+    fs::create_dir(&outside).unwrap();
+    if create_dir_symlink(&outside, &project_dir.join("screenshots")).is_err() {
+        return;
+    }
+
+    let error = storage
+        .screenshots()
+        .import_screenshot(
+            project.id,
+            fixture_path(VALID_PNG).as_path(),
+            "Home",
+            "Symlinked",
+        )
+        .await
+        .unwrap_err();
+
+    assert!(matches!(error, StorageError::UnsafeScreenshotPath(_)));
+    assert_eq!(fs::read_dir(outside).unwrap().count(), 0);
 }
 
 #[tokio::test]
@@ -418,8 +451,57 @@ async fn removing_a_screenshot_rejects_unsafe_stored_relative_paths() {
     assert_eq!(fs::read_to_string(outside).unwrap(), "must survive");
 }
 
+#[tokio::test]
+async fn removing_a_screenshot_rejects_symlinked_screenshots_directory() {
+    let temp = tempfile::tempdir().unwrap();
+    let storage = Storage::open(temp.path()).await.unwrap();
+    let project = storage
+        .projects()
+        .create("Finance app", Platform::Mobile)
+        .await
+        .unwrap();
+    let screenshot = storage
+        .screenshots()
+        .import_screenshot(
+            project.id,
+            fixture_path(VALID_PNG).as_path(),
+            "Home",
+            "Default",
+        )
+        .await
+        .unwrap();
+    let project_dir = temp.path().join("projects").join(project.id.to_string());
+    let outside = temp.path().join("outside-screenshots");
+    fs::create_dir(&outside).unwrap();
+    let outside_file = outside.join(format!("{}.png", screenshot.id));
+    fs::write(&outside_file, "must survive").unwrap();
+    fs::remove_dir_all(project_dir.join("screenshots")).unwrap();
+    if create_dir_symlink(&outside, &project_dir.join("screenshots")).is_err() {
+        return;
+    }
+
+    let error = storage
+        .screenshots()
+        .remove_screenshot(project.id, screenshot.id)
+        .await
+        .unwrap_err();
+
+    assert!(matches!(error, StorageError::UnsafeScreenshotPath(_)));
+    assert_eq!(fs::read_to_string(outside_file).unwrap(), "must survive");
+}
+
 fn fixture_path(relative: &str) -> std::path::PathBuf {
     std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(relative)
+}
+
+#[cfg(unix)]
+fn create_dir_symlink(target: &Path, link: &Path) -> io::Result<()> {
+    std::os::unix::fs::symlink(target, link)
+}
+
+#[cfg(windows)]
+fn create_dir_symlink(target: &Path, link: &Path) -> io::Result<()> {
+    std::os::windows::fs::symlink_dir(target, link)
 }
 
 fn sha256_hex(bytes: &[u8]) -> String {
