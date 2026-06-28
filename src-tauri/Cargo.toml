@@ -6,7 +6,11 @@ authors = ["ToMD"]
 edition = "2021"
 
 [workspace]
-members = ["crates/design-core", "crates/design-storage"]
+members = [
+    "crates/design-core",
+    "crates/design-providers",
+    "crates/design-storage",
+]
 resolver = "2"
 
 [lib]
