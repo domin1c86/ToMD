@@ -37,8 +37,8 @@ pub trait CredentialStore: Send + Sync {
 
 #[derive(Debug, Error)]
 pub enum CredentialStoreError {
-    #[error("credential reference is invalid: {0}")]
-    InvalidCredentialRef(String),
+    #[error("credential reference is invalid")]
+    InvalidCredentialRef,
     #[error("credential already exists")]
     CredentialAlreadyExists,
     #[error("credential was not found")]
@@ -225,14 +225,12 @@ fn credential_location(config: &ProviderConfig) -> Result<(&str, &str), Credenti
     let username = config
         .credential_ref
         .strip_prefix(&prefix)
-        .ok_or_else(|| CredentialStoreError::InvalidCredentialRef(config.credential_ref.clone()))?;
+        .ok_or(CredentialStoreError::InvalidCredentialRef)?;
 
     if username == username_for_provider(config.id) {
         Ok((SERVICE_NAME, username))
     } else {
-        Err(CredentialStoreError::InvalidCredentialRef(
-            config.credential_ref.clone(),
-        ))
+        Err(CredentialStoreError::InvalidCredentialRef)
     }
 }
 

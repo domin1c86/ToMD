@@ -125,10 +125,7 @@ fn invalid_credential_ref_rejects_wrong_scheme() {
 
     let error = read_provider_secret_with_store(&store, &invalid).unwrap_err();
 
-    assert!(matches!(
-        error,
-        CredentialStoreError::InvalidCredentialRef(_)
-    ));
+    assert!(matches!(error, CredentialStoreError::InvalidCredentialRef));
 }
 
 #[test]
@@ -141,10 +138,7 @@ fn invalid_credential_ref_rejects_wrong_service() {
 
     let error = read_provider_secret_with_store(&store, &invalid).unwrap_err();
 
-    assert!(matches!(
-        error,
-        CredentialStoreError::InvalidCredentialRef(_)
-    ));
+    assert!(matches!(error, CredentialStoreError::InvalidCredentialRef));
 }
 
 #[test]
@@ -157,10 +151,7 @@ fn invalid_credential_ref_rejects_wrong_username() {
 
     let error = read_provider_secret_with_store(&store, &invalid).unwrap_err();
 
-    assert!(matches!(
-        error,
-        CredentialStoreError::InvalidCredentialRef(_)
-    ));
+    assert!(matches!(error, CredentialStoreError::InvalidCredentialRef));
 }
 
 #[test]
@@ -171,10 +162,27 @@ fn invalid_credential_ref_rejects_provider_id_mismatch() {
 
     let error = read_provider_secret_with_store(&store, &invalid).unwrap_err();
 
-    assert!(matches!(
-        error,
-        CredentialStoreError::InvalidCredentialRef(_)
-    ));
+    assert!(matches!(error, CredentialStoreError::InvalidCredentialRef));
+}
+
+#[test]
+fn invalid_credential_ref_display_never_echoes_secret() {
+    let store = MemoryCredentialStore::default();
+    let invalid = config_with_ref("sk-secret");
+
+    let error = read_provider_secret_with_store(&store, &invalid).unwrap_err();
+
+    assert!(!format!("{error}").contains("sk-secret"));
+}
+
+#[test]
+fn invalid_credential_ref_debug_never_echoes_embedded_secret() {
+    let store = MemoryCredentialStore::default();
+    let invalid = config_with_ref(format!("keyring://{SERVICE_NAME}/provider:sk-secret"));
+
+    let error = read_provider_secret_with_store(&store, &invalid).unwrap_err();
+
+    assert!(!format!("{error:?}").contains("sk-secret"));
 }
 
 #[test]
