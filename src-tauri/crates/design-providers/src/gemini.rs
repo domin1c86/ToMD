@@ -61,7 +61,7 @@ impl MultimodalProvider for GeminiProvider {
             .await
             .map_err(ProviderError::from_reqwest)?;
 
-        parse_capabilities(response).await
+        parse_capabilities(response, self.capabilities()).await
     }
 
     async fn analyze(&self, request: AnalysisRequest) -> Result<RawModelResponse, ProviderError> {

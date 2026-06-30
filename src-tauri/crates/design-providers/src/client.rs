@@ -44,13 +44,23 @@ impl ProviderCapabilities {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct AnalysisImage {
     pub media_type: String,
     pub bytes: Vec<u8>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+impl fmt::Debug for AnalysisImage {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("AnalysisImage")
+            .field("media_type", &self.media_type)
+            .field("byte_len", &self.bytes.len())
+            .finish()
+    }
+}
+
+#[derive(Clone, PartialEq)]
 pub struct AnalysisRequest {
     pub model: String,
     pub prompt: String,
@@ -58,11 +68,34 @@ pub struct AnalysisRequest {
     pub images: Vec<AnalysisImage>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+impl fmt::Debug for AnalysisRequest {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("AnalysisRequest")
+            .field("model", &self.model)
+            .field("prompt", &"[REDACTED]")
+            .field("json_schema", &"[REDACTED]")
+            .field("image_count", &self.images.len())
+            .finish()
+    }
+}
+
+#[derive(Clone, PartialEq, Eq)]
 pub struct RawModelResponse {
     pub body: String,
     pub status_code: u16,
     pub request_id: Option<String>,
+}
+
+impl fmt::Debug for RawModelResponse {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("RawModelResponse")
+            .field("body", &"[REDACTED]")
+            .field("status_code", &self.status_code)
+            .field("request_id", &self.request_id)
+            .finish()
+    }
 }
 
 #[derive(Clone, PartialEq, Eq)]
@@ -212,24 +245,38 @@ pub(crate) fn request_id(headers: &HeaderMap) -> Option<String> {
 
 pub(crate) async fn parse_capabilities(
     response: Response,
+    default_capabilities: ProviderCapabilities,
 ) -> Result<ProviderCapabilities, ProviderError> {
     let status = response.status();
     if !status.is_success() {
         return Err(ProviderError::from_status(status));
     }
 
-    let body: Value = response.json().await.map_err(ProviderError::from_reqwest)?;
-    let capabilities = body.get("capabilities").unwrap_or(&body);
+    let body: Value = response
+        .json()
+        .await
+        .map_err(|error| ProviderError::InvalidResponse {
+            message: format!("provider capability response was not valid JSON: {error}"),
+        })?;
+    let Some(capabilities) = body.get("capabilities").or_else(|| {
+        if body.get("image_input").is_some() || body.get("structured_output").is_some() {
+            Some(&body)
+        } else {
+            None
+        }
+    }) else {
+        return Ok(default_capabilities);
+    };
 
     Ok(ProviderCapabilities {
         image_input: capabilities
             .get("image_input")
             .and_then(Value::as_bool)
-            .unwrap_or(false),
+            .unwrap_or(default_capabilities.image_input),
         structured_output: capabilities
             .get("structured_output")
             .and_then(Value::as_bool)
-            .unwrap_or(false),
+            .unwrap_or(default_capabilities.structured_output),
     })
 }
 

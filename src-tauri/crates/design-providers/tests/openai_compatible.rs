@@ -142,6 +142,46 @@ async fn test_connection_fetches_configured_model_capabilities() {
 }
 
 #[tokio::test]
+async fn test_connection_defaults_to_adapter_capabilities_when_metadata_has_no_capabilities() {
+    let server = MockServer::spawn(vec![MockResponse::json(
+        200,
+        r#"{"id":"vision-model","object":"model"}"#,
+    )]);
+    let provider = build_provider(
+        &config(&server.base_url),
+        SecretString::new("sk-secret"),
+        reqwest::Client::new(),
+    )
+    .unwrap();
+
+    let capabilities = provider.test_connection().await.unwrap();
+
+    assert_eq!(
+        capabilities,
+        ProviderCapabilities {
+            image_input: true,
+            structured_output: true,
+        }
+    );
+}
+
+#[tokio::test]
+async fn test_connection_maps_malformed_capability_json_to_invalid_response() {
+    let server = MockServer::spawn(vec![MockResponse::json(200, "not json")]);
+    let provider = build_provider(
+        &config(&server.base_url),
+        SecretString::new("sk-secret"),
+        reqwest::Client::new(),
+    )
+    .unwrap();
+
+    let error = provider.test_connection().await.unwrap_err();
+
+    assert!(matches!(error, ProviderError::InvalidResponse { .. }));
+    assert!(!format!("{error}").contains("not json"));
+}
+
+#[tokio::test]
 async fn maps_reqwest_timeout_to_provider_timeout() {
     let server = MockServer::spawn(vec![MockResponse::delayed_json(
         200,
@@ -204,4 +244,34 @@ fn secret_string_and_request_log_debug_are_redacted() {
     assert!(!rendered.contains("analysis prompt"));
     assert!(!rendered.contains("AQIDBA=="));
     assert!(!rendered.contains("choices"));
+}
+
+#[test]
+fn sensitive_request_and_response_debug_are_redacted() {
+    let request = request();
+    let request_debug = format!("{request:?}");
+
+    assert!(request_debug.contains("vision-model"));
+    assert!(request_debug.contains("image_count"));
+    assert!(!request_debug.contains("analysis prompt"));
+    assert!(!request_debug.contains("AQIDBA=="));
+    assert!(!request_debug.contains("[1, 2, 3, 4]"));
+    assert!(!request_debug.contains("colors"));
+
+    let image_debug = format!("{:?}", request.images[0]);
+    assert!(image_debug.contains("image/png"));
+    assert!(image_debug.contains("byte_len"));
+    assert!(!image_debug.contains("[1, 2, 3, 4]"));
+    assert!(!image_debug.contains("AQIDBA=="));
+
+    let raw = design_providers::RawModelResponse {
+        body: r#"{"secret":"provider body"}"#.to_owned(),
+        status_code: 200,
+        request_id: Some("req-compatible".to_owned()),
+    };
+    let raw_debug = format!("{raw:?}");
+    assert!(raw_debug.contains("status_code"));
+    assert!(raw_debug.contains("req-compatible"));
+    assert!(!raw_debug.contains("provider body"));
+    assert!(!raw_debug.contains("secret"));
 }
