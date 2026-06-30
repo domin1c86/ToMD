@@ -570,6 +570,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "design-analysis"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "design-core",
+ "design-providers",
+ "schemars 1.2.1",
+ "serde_json",
+ "thiserror 2.0.18",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
 name = "design-core"
 version = "0.1.0"
 dependencies = [
