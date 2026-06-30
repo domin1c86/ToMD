@@ -269,15 +269,31 @@ pub(crate) async fn parse_capabilities(
     };
 
     Ok(ProviderCapabilities {
-        image_input: capabilities
-            .get("image_input")
-            .and_then(Value::as_bool)
-            .unwrap_or(default_capabilities.image_input),
-        structured_output: capabilities
-            .get("structured_output")
-            .and_then(Value::as_bool)
-            .unwrap_or(default_capabilities.structured_output),
+        image_input: optional_bool_capability(
+            capabilities,
+            "image_input",
+            default_capabilities.image_input,
+        )?,
+        structured_output: optional_bool_capability(
+            capabilities,
+            "structured_output",
+            default_capabilities.structured_output,
+        )?,
     })
+}
+
+fn optional_bool_capability(
+    capabilities: &Value,
+    field: &'static str,
+    default: bool,
+) -> Result<bool, ProviderError> {
+    match capabilities.get(field) {
+        Some(Value::Bool(value)) => Ok(*value),
+        Some(_) => Err(ProviderError::InvalidResponse {
+            message: format!("provider capability field `{field}` must be boolean"),
+        }),
+        None => Ok(default),
+    }
 }
 
 pub(crate) fn elapsed_ms(started_at: Instant) -> u128 {

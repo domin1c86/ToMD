@@ -56,7 +56,7 @@ impl MultimodalProvider for GeminiProvider {
         let response = self
             .client
             .get(url)
-            .bearer_auth(self.secret.expose_secret())
+            .header("x-goog-api-key", self.secret.expose_secret())
             .send()
             .await
             .map_err(ProviderError::from_reqwest)?;
@@ -98,7 +98,7 @@ impl MultimodalProvider for GeminiProvider {
                 &self.config.base_url,
                 &format!("models/{}:generateContent", request.model),
             )?)
-            .bearer_auth(self.secret.expose_secret())
+            .header("x-goog-api-key", self.secret.expose_secret())
             .json(&body)
             .send()
             .await

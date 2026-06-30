@@ -48,9 +48,10 @@ async fn gemini_preset_uses_generate_content_with_inline_data_and_response_schem
     let captured = server.single_request();
     assert_eq!(captured.path, "/models/gemini-vision:generateContent");
     assert_eq!(
-        captured.headers.get("authorization").unwrap(),
-        "Bearer gemini-secret"
+        captured.headers.get("x-goog-api-key").unwrap(),
+        "gemini-secret"
     );
+    assert!(!captured.headers.contains_key("authorization"));
 
     let body: Value = serde_json::from_str(&captured.body).unwrap();
     assert_eq!(

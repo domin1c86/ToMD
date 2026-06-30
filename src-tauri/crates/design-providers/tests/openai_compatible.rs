@@ -182,6 +182,27 @@ async fn test_connection_maps_malformed_capability_json_to_invalid_response() {
 }
 
 #[tokio::test]
+async fn test_connection_rejects_non_boolean_capability_fields() {
+    let server = MockServer::spawn(vec![MockResponse::json(
+        200,
+        r#"{"capabilities":{"image_input":"false","structured_output":true}}"#,
+    )]);
+    let provider = build_provider(
+        &config(&server.base_url),
+        SecretString::new("sk-secret"),
+        reqwest::Client::new(),
+    )
+    .unwrap();
+
+    let error = provider.test_connection().await.unwrap_err();
+
+    assert!(matches!(error, ProviderError::InvalidResponse { .. }));
+    assert!(format!("{error}").contains("image_input"));
+    assert!(!format!("{error}").contains("structured_output"));
+    assert!(!format!("{error}").contains("false"));
+}
+
+#[tokio::test]
 async fn maps_reqwest_timeout_to_provider_timeout() {
     let server = MockServer::spawn(vec![MockResponse::delayed_json(
         200,
