@@ -1,6 +1,8 @@
 use async_trait::async_trait;
 use chrono::Utc;
-use design_core::{DesignSpec, Platform, RuleStatus};
+use std::collections::HashSet;
+
+use design_core::{DesignSpec, Platform, Rule, RuleKind, RuleStatus};
 use design_providers::{AnalysisImage, AnalysisRequest, MultimodalProvider, ProviderError};
 use schemars::schema_for;
 use thiserror::Error;
@@ -59,7 +61,7 @@ pub trait AnalysisRepository: Send + Sync {
         project_id: Uuid,
         screenshot_ids: &[Uuid],
     ) -> Result<Vec<AnalysisScreenshot>, AnalysisError>;
-    async fn insert_validated_version(
+    async fn insert_version_and_replace_draft(
         &self,
         project_id: Uuid,
         spec: DesignSpec,
@@ -164,7 +166,7 @@ where
     ) -> Result<AnalysisOutcome, AnalysisError> {
         let version = self
             .repository
-            .insert_validated_version(project_id, spec, self.provider_id, &self.model)
+            .insert_version_and_replace_draft(project_id, spec, self.provider_id, &self.model)
             .await?;
 
         Ok(AnalysisOutcome {
@@ -185,8 +187,13 @@ fn parse_validate_and_prepare(
     screenshot_ids: &[Uuid],
 ) -> Result<DesignSpec, AnalysisError> {
     let json = extract_json(body).ok_or(AnalysisError::InvalidJson)?;
-    let mut spec: DesignSpec =
-        serde_json::from_str(json).map_err(|_| AnalysisError::InvalidJson)?;
+    let mut spec: DesignSpec = serde_json::from_str(json).map_err(|error| {
+        if error.is_data() {
+            AnalysisError::InvalidSpec
+        } else {
+            AnalysisError::InvalidJson
+        }
+    })?;
 
     spec.metadata.project_id = project.id.to_string();
     spec.metadata.platform = project.platform;
@@ -197,6 +204,7 @@ fn parse_validate_and_prepare(
     normalize_rule_statuses(&mut spec);
 
     spec.validate().map_err(|_| AnalysisError::InvalidSpec)?;
+    validate_provenance(&spec, screenshot_ids)?;
     Ok(spec)
 }
 
@@ -224,4 +232,36 @@ fn normalize_rule_statuses(spec: &mut DesignSpec) {
     {
         rule.status = RuleStatus::Pending;
     }
+}
+
+fn validate_provenance(spec: &DesignSpec, screenshot_ids: &[Uuid]) -> Result<(), AnalysisError> {
+    let selected_screenshot_ids = screenshot_ids.iter().copied().collect::<HashSet<_>>();
+
+    if spec
+        .evidence
+        .iter()
+        .any(|evidence| !selected_screenshot_ids.contains(&evidence.screenshot_id))
+    {
+        return Err(AnalysisError::InvalidSpec);
+    }
+
+    if all_rules(spec).any(|rule| {
+        matches!(rule.kind, RuleKind::Pattern | RuleKind::Recommendation)
+            && rule.evidence_ids.is_empty()
+    }) {
+        return Err(AnalysisError::InvalidSpec);
+    }
+
+    Ok(())
+}
+
+fn all_rules(spec: &DesignSpec) -> impl Iterator<Item = &Rule> {
+    spec.intent
+        .iter()
+        .chain(&spec.tokens)
+        .chain(&spec.layout)
+        .chain(&spec.components)
+        .chain(&spec.assets)
+        .chain(&spec.motion)
+        .chain(&spec.constraints)
 }

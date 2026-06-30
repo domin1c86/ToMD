@@ -34,6 +34,7 @@ async fn valid_first_response_creates_one_persisted_spec_version_with_provenance
 
     assert!(!outcome.repair_attempted);
     assert_eq!(repository.versions().len(), 1);
+    assert_eq!(repository.draft_replacements(), 1);
     let stored = &repository.versions()[0];
     assert_eq!(stored.version.provider_id, PROVIDER_ID);
     assert_eq!(stored.version.model, "vision-model");
@@ -87,6 +88,32 @@ async fn invalid_json_triggers_exactly_one_repair_request_and_persists_repaired_
 }
 
 #[tokio::test]
+async fn repair_request_restates_privacy_rules_without_echoing_invalid_output() {
+    let repository = FakeRepository::default();
+    let provider = FakeProvider::new(vec![
+        raw_response("BrandName customer@example.com D:\\secret\\shot.png"),
+        raw_response(valid_spec_json()),
+    ]);
+    let provider_handle = provider.clone();
+    let orchestrator =
+        AnalysisOrchestrator::new(repository.clone(), provider, PROVIDER_ID, "vision-model");
+
+    let outcome = orchestrator
+        .analyze_project(PROJECT_ID, vec![SCREENSHOT_ID])
+        .await
+        .unwrap();
+
+    assert!(outcome.repair_attempted);
+    let repair_prompt = &provider_handle.requests()[1].prompt;
+    assert!(repair_prompt.contains("Do not copy or emit brand names"));
+    assert!(repair_prompt.contains("customer data"));
+    assert!(repair_prompt.contains("Return only JSON matching the supplied schema."));
+    assert!(!repair_prompt.contains("BrandName"));
+    assert!(!repair_prompt.contains("customer@example.com"));
+    assert!(!repair_prompt.contains("D:\\secret"));
+}
+
+#[tokio::test]
 async fn invalid_repaired_output_creates_no_formal_version() {
     let repository = FakeRepository::default();
     let provider = FakeProvider::new(vec![raw_response("not json"), raw_response("{")]);
@@ -99,6 +126,26 @@ async fn invalid_repaired_output_creates_no_formal_version() {
         .unwrap_err();
 
     assert_eq!(error, AnalysisError::InvalidJson);
+    assert!(repository.versions().is_empty());
+}
+
+#[tokio::test]
+async fn valid_json_with_invalid_design_spec_shape_is_invalid_spec_not_invalid_json() {
+    let repository = FakeRepository::default();
+    let invalid_shape = include_str!("fixtures/invalid-response.json");
+    let provider = FakeProvider::new(vec![
+        raw_response(invalid_shape),
+        raw_response(invalid_shape),
+    ]);
+    let orchestrator =
+        AnalysisOrchestrator::new(repository.clone(), provider, PROVIDER_ID, "vision-model");
+
+    let error = orchestrator
+        .analyze_project(PROJECT_ID, vec![SCREENSHOT_ID])
+        .await
+        .unwrap_err();
+
+    assert_eq!(error, AnalysisError::InvalidSpec);
     assert!(repository.versions().is_empty());
 }
 
@@ -124,6 +171,25 @@ async fn missing_evidence_ids_fail_validation_and_do_not_persist() {
 }
 
 #[tokio::test]
+async fn evidence_from_unselected_screenshot_fails_validation_and_does_not_persist() {
+    let repository = FakeRepository::default();
+    let provider = FakeProvider::new(vec![
+        raw_response(spec_json_with_foreign_screenshot_evidence()),
+        raw_response(spec_json_with_foreign_screenshot_evidence()),
+    ]);
+    let orchestrator =
+        AnalysisOrchestrator::new(repository.clone(), provider, PROVIDER_ID, "vision-model");
+
+    let error = orchestrator
+        .analyze_project(PROJECT_ID, vec![SCREENSHOT_ID])
+        .await
+        .unwrap_err();
+
+    assert_eq!(error, AnalysisError::InvalidSpec);
+    assert!(repository.versions().is_empty());
+}
+
+#[tokio::test]
 async fn low_confidence_model_findings_remain_pending_for_user_adjustment() {
     let repository = FakeRepository::default();
     let provider = FakeProvider::new(vec![raw_response(valid_spec_json())]);
@@ -136,6 +202,25 @@ async fn low_confidence_model_findings_remain_pending_for_user_adjustment() {
 
     assert_eq!(outcome.spec.tokens[0].confidence, 0.42);
     assert_eq!(outcome.spec.tokens[0].status, RuleStatus::Pending);
+}
+
+#[tokio::test]
+async fn conflicting_model_findings_remain_pending_for_user_adjustment() {
+    let repository = FakeRepository::default();
+    let provider = FakeProvider::new(vec![raw_response(conflicting_spec_json())]);
+    let orchestrator = AnalysisOrchestrator::new(repository, provider, PROVIDER_ID, "vision-model");
+
+    let outcome = orchestrator
+        .analyze_project(PROJECT_ID, vec![SCREENSHOT_ID])
+        .await
+        .unwrap();
+
+    assert_eq!(outcome.spec.tokens.len(), 2);
+    assert!(outcome
+        .spec
+        .tokens
+        .iter()
+        .all(|rule| rule.status == RuleStatus::Pending));
 }
 
 #[tokio::test]
@@ -157,11 +242,16 @@ async fn provider_failure_creates_no_version_and_preserves_project_state() {
 #[derive(Clone, Default)]
 struct FakeRepository {
     versions: Arc<Mutex<Vec<StoredVersionRecord>>>,
+    draft_replacements: Arc<Mutex<usize>>,
 }
 
 impl FakeRepository {
     fn versions(&self) -> Vec<StoredVersionRecord> {
         self.versions.lock().unwrap().clone()
+    }
+
+    fn draft_replacements(&self) -> usize {
+        *self.draft_replacements.lock().unwrap()
     }
 }
 
@@ -198,7 +288,7 @@ impl AnalysisRepository for FakeRepository {
         }])
     }
 
-    async fn insert_validated_version(
+    async fn insert_version_and_replace_draft(
         &self,
         project_id: Uuid,
         spec: DesignSpec,
@@ -215,6 +305,7 @@ impl AnalysisRepository for FakeRepository {
             project_id,
             version: version.clone(),
         });
+        *self.draft_replacements.lock().unwrap() += 1;
         Ok(version)
     }
 }
@@ -275,6 +366,23 @@ fn valid_spec_json() -> String {
 fn spec_json_with_missing_evidence() -> String {
     let mut spec = valid_spec();
     spec.tokens[0].evidence_ids = vec![Uuid::from_u128(0x11111111_1111_1111_1111_111111111111)];
+    serde_json::to_string(&spec).unwrap()
+}
+
+fn spec_json_with_foreign_screenshot_evidence() -> String {
+    let mut spec = valid_spec();
+    spec.evidence[0].screenshot_id = Uuid::from_u128(0x22222222_2222_2222_2222_222222222222);
+    serde_json::to_string(&spec).unwrap()
+}
+
+fn conflicting_spec_json() -> String {
+    let mut spec = valid_spec();
+    let mut conflicting = spec.tokens[0].clone();
+    conflicting.id = Uuid::from_u128(0x99999999_9999_9999_9999_999999999999);
+    conflicting.statement = "Primary actions use a muted gray treatment.".to_owned();
+    conflicting.confidence = 0.91;
+    conflicting.status = RuleStatus::Accepted;
+    spec.tokens.push(conflicting);
     serde_json::to_string(&spec).unwrap()
 }
 
