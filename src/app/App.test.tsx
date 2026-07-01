@@ -1,9 +1,24 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { App } from "./App";
+import { desktop } from "../lib/desktop";
+
+vi.mock("../lib/desktop", () => ({
+  desktop: {
+    listProjects: vi.fn(),
+  },
+}));
+
+const mockedDesktop = vi.mocked(desktop);
 
 describe("App", () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    window.history.pushState({}, "", "/");
+    mockedDesktop.listProjects.mockResolvedValue([]);
+  });
+
   it("renders the application heading and Projects navigation link", () => {
     render(<App />);
 
@@ -16,9 +31,9 @@ describe("App", () => {
     );
   });
 
-  it("renders the empty projects state at the root route", () => {
+  it("renders the empty projects state at the root route", async () => {
     render(<App />);
 
-    expect(screen.getByText("No projects yet.")).toBeInTheDocument();
+    expect(await screen.findByText("No projects yet.")).toBeInTheDocument();
   });
 });
