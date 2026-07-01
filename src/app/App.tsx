@@ -4,6 +4,7 @@ import { AnalysisStartPage } from "../features/analysis/AnalysisStartPage";
 import { ProviderSettingsPage } from "../features/providers/ProviderSettingsPage";
 import { ProjectListPage } from "../features/projects/ProjectListPage";
 import { ScreenshotManagerPage } from "../features/screenshots/ScreenshotManagerPage";
+import { WorkbenchPage } from "../features/workbench/WorkbenchPage";
 
 export function App() {
   return (
@@ -20,7 +21,7 @@ export function App() {
           <Route path="/projects/:projectId" element={<ScreenshotManagerPage />} />
           <Route path="/projects/:projectId/providers" element={<ProviderSettingsPage />} />
           <Route path="/projects/:projectId/analyze" element={<AnalysisStartPage />} />
-          <Route path="/projects/:projectId/workbench" element={<p>Rule workbench</p>} />
+          <Route path="/projects/:projectId/workbench" element={<WorkbenchPage />} />
           <Route path="/projects/:projectId/exports" element={<p>Exports</p>} />
         </Routes>
       </main>
