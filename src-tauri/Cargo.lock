@@ -601,8 +601,21 @@ dependencies = [
 name = "design-language-extractor"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
+ "chrono",
+ "design-analysis",
+ "design-core",
+ "design-providers",
+ "design-storage",
+ "reqwest",
+ "rusqlite",
+ "serde",
+ "serde_json",
  "tauri",
  "tauri-build",
+ "tokio",
+ "url",
+ "uuid",
 ]
 
 [[package]]
