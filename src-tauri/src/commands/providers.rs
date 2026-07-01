@@ -273,3 +273,36 @@ fn _parse_datetime(value: String) -> CommandResult<DateTime<Utc>> {
         .map(|value| value.with_timezone(&Utc))
         .map_err(command_error)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn save_provider_input_accepts_rust_snake_case_provider_kind() {
+        let input = serde_json::from_value::<SaveProviderInput>(serde_json::json!({
+            "name": "Local",
+            "kind": "open_ai_compatible",
+            "baseUrl": "http://localhost:11434/v1",
+            "model": "vision",
+            "apiKey": "secret"
+        }))
+        .unwrap();
+
+        assert_eq!(input.kind, ProviderKind::OpenAiCompatible);
+    }
+
+    #[test]
+    fn save_provider_input_rejects_legacy_openai_compatible_spelling() {
+        let error = serde_json::from_value::<SaveProviderInput>(serde_json::json!({
+            "name": "Local",
+            "kind": "openai_compatible",
+            "baseUrl": "http://localhost:11434/v1",
+            "model": "vision",
+            "apiKey": "secret"
+        }))
+        .unwrap_err();
+
+        assert!(error.to_string().contains("unknown variant"));
+    }
+}

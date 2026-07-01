@@ -338,3 +338,46 @@ fn platform_from_str(value: &str) -> Result<design_core::Platform, AnalysisError
         ))),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+
+    #[test]
+    fn analysis_preview_serialization_contains_no_bytes_paths_or_credentials() {
+        let preview = AnalysisPreview {
+            provider_name: "Provider".to_owned(),
+            model: "vision".to_owned(),
+            image_ids: vec![Uuid::new_v4().to_string()],
+            image_count: 1,
+            estimated_encoded_bytes: 128,
+        };
+
+        let value = serde_json::to_value(preview).unwrap();
+
+        assert!(value.get("provider_name").is_some());
+        assert!(value.get("model").is_some());
+        assert!(value.get("image_ids").is_some());
+        assert!(value.get("image_count").is_some());
+        assert!(value.get("estimated_encoded_bytes").is_some());
+        assert!(value.get("bytes").is_none());
+        assert!(value.get("credential").is_none());
+        assert!(value.get("credential_ref").is_none());
+        assert!(value.get("path").is_none());
+    }
+
+    #[test]
+    fn safe_screenshot_path_rejects_relative_path_escape() {
+        let temp = tempfile::tempdir().unwrap();
+        let project_dir = temp.path().join("project");
+        let screenshots_dir = project_dir.join("screenshots");
+        fs::create_dir_all(&screenshots_dir).unwrap();
+        fs::write(screenshots_dir.join("safe.png"), b"not an image").unwrap();
+
+        assert!(safe_screenshot_path(&project_dir, "screenshots/safe.png").is_ok());
+        assert!(safe_screenshot_path(&project_dir, "../secret.txt").is_err());
+        assert!(safe_screenshot_path(&project_dir, "screenshots/../secret.txt").is_err());
+        assert!(safe_screenshot_path(&project_dir, "screenshots/nested/file.png").is_err());
+    }
+}
