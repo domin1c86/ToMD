@@ -2,7 +2,8 @@ use std::{fs, path::PathBuf};
 
 use chrono::{DateTime, Utc};
 use design_core::compile_markdown;
-use rusqlite::{params, Connection};
+use design_storage::open_connection;
+use rusqlite::params;
 use serde::{Deserialize, Serialize};
 use tauri::State;
 use uuid::Uuid;
@@ -21,7 +22,6 @@ pub struct ProjectIdInput {
 #[serde(rename_all = "camelCase")]
 pub struct ExportDesignMarkdownInput {
     project_id: String,
-    destination_path: Option<PathBuf>,
 }
 
 #[derive(Debug, Serialize)]
@@ -54,7 +54,7 @@ pub async fn export_design_markdown(
     let db_path = state.db_path.clone();
     let app_data_dir = state.app_data_dir.clone();
     tauri::async_runtime::spawn_blocking(move || {
-        export_design_markdown_blocking(db_path, app_data_dir, project_id, input.destination_path)
+        export_design_markdown_blocking(db_path, app_data_dir, project_id)
     })
     .await
     .map_err(command_error)?
@@ -64,7 +64,7 @@ fn list_exports_blocking(
     db_path: PathBuf,
     project_id: Uuid,
 ) -> CommandResult<Vec<ExportVersionView>> {
-    let connection = Connection::open(db_path).map_err(command_error)?;
+    let connection = open_connection(&db_path).map_err(command_error)?;
     let mut statement = connection
         .prepare(
             "SELECT id, project_id, spec_version_id, relative_path, created_at
@@ -85,51 +85,68 @@ fn export_design_markdown_blocking(
     db_path: PathBuf,
     app_data_dir: PathBuf,
     project_id: Uuid,
-    destination_path: Option<PathBuf>,
 ) -> CommandResult<ExportVersionView> {
-    let connection = Connection::open(&db_path).map_err(command_error)?;
+    let mut connection = open_connection(&db_path).map_err(command_error)?;
     let spec = load_draft_spec(&db_path, project_id)?;
     let markdown = compile_markdown(&spec).map_err(command_error)?;
-    let spec_version_id: String = connection
-        .query_row(
-            "SELECT base_version_id FROM design_spec_drafts WHERE project_id = ?1",
-            params![project_id.to_string()],
-            |row| row.get(0),
-        )
-        .map_err(command_error)?;
+    let spec_version_id = Uuid::new_v4();
+    let provider_id = spec
+        .metadata
+        .provider_id
+        .clone()
+        .unwrap_or_else(|| Uuid::nil().to_string());
+    let model = spec
+        .metadata
+        .model
+        .clone()
+        .unwrap_or_else(|| "manual-draft".to_owned());
 
     let export_id = Uuid::new_v4();
     let relative_path = format!("exports/{export_id}.md");
-    let destination = destination_path.unwrap_or_else(|| {
-        app_data_dir
-            .join("projects")
-            .join(project_id.to_string())
-            .join(&relative_path)
-    });
+    let destination = app_data_dir
+        .join("projects")
+        .join(project_id.to_string())
+        .join(&relative_path);
     if let Some(parent) = destination.parent() {
         fs::create_dir_all(parent).map_err(command_error)?;
     }
     fs::write(&destination, markdown).map_err(command_error)?;
 
     let created_at = Utc::now();
-    connection
+    let transaction = connection.transaction().map_err(command_error)?;
+    transaction
+        .execute(
+            "INSERT INTO design_spec_versions (id, project_id, spec_json, provider_id, model, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            params![
+                spec_version_id.to_string(),
+                project_id.to_string(),
+                serde_json::to_string(&spec).map_err(command_error)?,
+                provider_id,
+                model,
+                created_at.to_rfc3339(),
+            ],
+        )
+        .map_err(command_error)?;
+    transaction
         .execute(
             "INSERT INTO export_versions (id, project_id, spec_version_id, relative_path, created_at)
              VALUES (?1, ?2, ?3, ?4, ?5)",
             params![
                 export_id.to_string(),
                 project_id.to_string(),
-                spec_version_id,
+                spec_version_id.to_string(),
                 relative_path,
                 created_at.to_rfc3339(),
             ],
         )
         .map_err(command_error)?;
+    transaction.commit().map_err(command_error)?;
 
     Ok(ExportVersionView {
         id: export_id.to_string(),
         project_id: project_id.to_string(),
-        spec_version_id,
+        spec_version_id: spec_version_id.to_string(),
         relative_path,
         created_at,
     })

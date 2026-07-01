@@ -4,7 +4,8 @@ use design_providers::{
     read_provider_secret_with_store, replace_provider_secret_with_store, save_provider_with_store,
     ProviderCapabilities, ProviderConfig, ProviderConfigView, ProviderKind, SecretString,
 };
-use rusqlite::{params, Connection};
+use design_storage::open_connection;
+use rusqlite::params;
 use serde::{Deserialize, Serialize};
 use tauri::State;
 use url::Url;
@@ -142,7 +143,7 @@ pub async fn delete_provider(
         if let Ok(config) = get_provider_config(&db_path, provider_id) {
             delete_provider_secret_with_store(&store, &config).map_err(command_error)?;
         }
-        Connection::open(db_path)
+        open_connection(&db_path)
             .map_err(command_error)?
             .execute(
                 "DELETE FROM provider_configs WHERE id = ?1",
@@ -178,7 +179,7 @@ pub fn get_provider_config(
     db_path: &std::path::Path,
     provider_id: Uuid,
 ) -> CommandResult<ProviderConfig> {
-    let connection = Connection::open(db_path).map_err(command_error)?;
+    let connection = open_connection(db_path).map_err(command_error)?;
     connection
         .query_row(
             "SELECT id, name, kind, base_url, model, credential_ref FROM provider_configs WHERE id = ?1",
@@ -189,7 +190,7 @@ pub fn get_provider_config(
 }
 
 pub fn list_provider_configs(db_path: &std::path::Path) -> CommandResult<Vec<ProviderConfig>> {
-    let connection = Connection::open(db_path).map_err(command_error)?;
+    let connection = open_connection(db_path).map_err(command_error)?;
     let mut statement = connection
         .prepare("SELECT id, name, kind, base_url, model, credential_ref FROM provider_configs ORDER BY created_at ASC")
         .map_err(command_error)?;
@@ -203,7 +204,7 @@ pub fn list_provider_configs(db_path: &std::path::Path) -> CommandResult<Vec<Pro
 
 fn upsert_provider_config(db_path: &std::path::Path, config: &ProviderConfig) -> CommandResult<()> {
     let now = Utc::now().to_rfc3339();
-    Connection::open(db_path)
+    open_connection(db_path)
         .map_err(command_error)?
         .execute(
             "INSERT INTO provider_configs (id, name, kind, base_url, model, credential_ref, created_at, updated_at)

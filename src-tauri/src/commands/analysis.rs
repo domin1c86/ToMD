@@ -10,7 +10,8 @@ use design_providers::{
     build_provider, read_provider_secret_with_store, AnalysisRequest, MultimodalProvider,
     ProviderCapabilities, ProviderError, RawModelResponse, SecretString,
 };
-use rusqlite::{params, Connection, OptionalExtension};
+use design_storage::open_connection;
+use rusqlite::{params, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use tauri::State;
 use uuid::Uuid;
@@ -122,7 +123,7 @@ fn estimate_encoded_screenshot_bytes(
     project_id: Uuid,
     screenshot_ids: &[Uuid],
 ) -> CommandResult<u64> {
-    let connection = Connection::open(db_path).map_err(command_error)?;
+    let connection = open_connection(&db_path).map_err(command_error)?;
     let mut total = 0_u64;
 
     for screenshot_id in screenshot_ids {
@@ -133,10 +134,8 @@ fn estimate_encoded_screenshot_bytes(
                 |row| row.get(0),
             )
             .map_err(command_error)?;
-        let path = app_data_dir
-            .join("projects")
-            .join(project_id.to_string())
-            .join(relative_path);
+        let project_dir = app_data_dir.join("projects").join(project_id.to_string());
+        let path = safe_screenshot_path(&project_dir, &relative_path)?;
         let byte_len = fs::metadata(path).map_err(command_error)?.len();
         total = total.saturating_add(byte_len.div_ceil(3) * 4);
     }
@@ -168,7 +167,7 @@ impl AnalysisRepository for DesktopAnalysisRepository {
     async fn load_project(&self, project_id: Uuid) -> Result<AnalysisProject, AnalysisError> {
         let db_path = self.db_path.clone();
         tauri::async_runtime::spawn_blocking(move || {
-            let connection = Connection::open(db_path).map_err(repository_error)?;
+            let connection = open_connection(&db_path).map_err(repository_error)?;
             let platform: String = connection
                 .query_row(
                     "SELECT platform FROM projects WHERE id = ?1",
@@ -198,7 +197,7 @@ impl AnalysisRepository for DesktopAnalysisRepository {
         let app_data_dir = self.app_data_dir.clone();
         let screenshot_ids = screenshot_ids.to_vec();
         tauri::async_runtime::spawn_blocking(move || {
-            let connection = Connection::open(db_path).map_err(repository_error)?;
+            let connection = open_connection(&db_path).map_err(repository_error)?;
             let mut screenshots = Vec::with_capacity(screenshot_ids.len());
 
             for screenshot_id in screenshot_ids {
@@ -224,10 +223,8 @@ impl AnalysisRepository for DesktopAnalysisRepository {
                             "screenshot {screenshot_id} was not found"
                         ))
                     })?;
-                let path = app_data_dir
-                    .join("projects")
-                    .join(project_id.to_string())
-                    .join(row.0);
+                let project_dir = app_data_dir.join("projects").join(project_id.to_string());
+                let path = safe_screenshot_path(&project_dir, &row.0).map_err(repository_error)?;
                 let bytes = fs::read(path).map_err(repository_error)?;
                 screenshots.push(AnalysisScreenshot {
                     id: screenshot_id,
@@ -254,7 +251,7 @@ impl AnalysisRepository for DesktopAnalysisRepository {
         let db_path = self.db_path.clone();
         let model = model.to_owned();
         tauri::async_runtime::spawn_blocking(move || {
-            let mut connection = Connection::open(db_path).map_err(repository_error)?;
+            let mut connection = open_connection(&db_path).map_err(repository_error)?;
             let transaction = connection.transaction().map_err(repository_error)?;
             let version_id = Uuid::new_v4();
             let spec_json = serde_json::to_string(&spec).map_err(repository_error)?;
@@ -305,6 +302,29 @@ impl AnalysisRepository for DesktopAnalysisRepository {
 
 fn repository_error(error: impl std::fmt::Display) -> AnalysisError {
     AnalysisError::Repository(error.to_string())
+}
+
+fn safe_screenshot_path(
+    project_dir: &std::path::Path,
+    relative_path: &str,
+) -> CommandResult<PathBuf> {
+    let mut components = std::path::Path::new(relative_path).components();
+    match components.next() {
+        Some(std::path::Component::Normal(directory)) if directory == "screenshots" => {}
+        _ => return Err("stored screenshot path is unsafe".to_owned()),
+    }
+    let tail = match components.next() {
+        Some(std::path::Component::Normal(file_name)) if components.next().is_none() => file_name,
+        _ => return Err("stored screenshot path is unsafe".to_owned()),
+    };
+    let screenshots_dir = project_dir.join("screenshots");
+    let target = screenshots_dir.join(tail);
+    let canonical_screenshots = screenshots_dir.canonicalize().map_err(command_error)?;
+    let canonical_target = target.canonicalize().map_err(command_error)?;
+    if !canonical_target.starts_with(canonical_screenshots) {
+        return Err("stored screenshot path escapes project screenshots directory".to_owned());
+    }
+    Ok(canonical_target)
 }
 
 fn platform_from_str(value: &str) -> Result<design_core::Platform, AnalysisError> {

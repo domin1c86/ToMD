@@ -29,7 +29,7 @@ export type ProviderKind =
   | "open_ai"
   | "anthropic"
   | "gemini"
-  | "openai_compatible";
+  | "open_ai_compatible";
 
 export type Provider = {
   id: string;
@@ -37,7 +37,6 @@ export type Provider = {
   kind: ProviderKind;
   base_url: string;
   model: string;
-  credential_ref: string;
   has_credential: boolean;
 };
 
@@ -127,9 +126,7 @@ export type UpdateRuleInput = ProjectIdInput & {
   status?: RuleStatus;
 };
 
-export type ExportDesignMarkdownInput = ProjectIdInput & {
-  destinationPath?: string;
-};
+export type ExportDesignMarkdownInput = ProjectIdInput;
 
 const command = <Output, Input = undefined>(
   name: string,

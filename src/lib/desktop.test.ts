@@ -58,7 +58,7 @@ describe("desktop command wrappers", () => {
     await desktop.listProviders();
     await desktop.saveProvider({
       name: "Local",
-      kind: "openai_compatible",
+      kind: "open_ai_compatible",
       baseUrl: "http://localhost:11434/v1",
       model: "vision",
       apiKey: "secret",

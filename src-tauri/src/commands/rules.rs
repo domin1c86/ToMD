@@ -1,5 +1,6 @@
 use design_core::{DesignSpec, Rule, RuleStatus};
-use rusqlite::{params, Connection, OptionalExtension};
+use design_storage::open_connection;
+use rusqlite::{params, OptionalExtension};
 use serde::Deserialize;
 use tauri::State;
 use uuid::Uuid;
@@ -44,7 +45,7 @@ pub async fn update_rule(
     let rule_id = parse_uuid(&input.rule_id, "ruleId")?;
     let db_path = state.db_path.clone();
     tauri::async_runtime::spawn_blocking(move || {
-        let connection = Connection::open(&db_path).map_err(command_error)?;
+        let connection = open_connection(&db_path).map_err(command_error)?;
         let mut spec = load_draft_spec(&db_path, project_id)?;
         let updated = update_rule_in_spec(&mut spec, rule_id, input.statement, input.status);
         if !updated {
@@ -68,7 +69,7 @@ pub async fn update_rule(
 }
 
 pub fn load_draft_spec(db_path: &std::path::Path, project_id: Uuid) -> CommandResult<DesignSpec> {
-    let connection = Connection::open(db_path).map_err(command_error)?;
+    let connection = open_connection(db_path).map_err(command_error)?;
     let draft_json = connection
         .query_row(
             "SELECT spec_json FROM design_spec_drafts WHERE project_id = ?1",

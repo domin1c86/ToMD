@@ -80,7 +80,7 @@ pub enum StorageError {
     },
 }
 
-pub(crate) fn open_connection(path: &Path) -> Result<Connection, StorageError> {
+pub fn open_connection(path: &Path) -> Result<Connection, StorageError> {
     let connection = Connection::open(path)?;
     connection.pragma_update(None, "foreign_keys", "ON")?;
     connection.pragma_update(None, "journal_mode", "WAL")?;

@@ -1,8 +1,8 @@
 use std::path::PathBuf;
 
 use chrono::{DateTime, Utc};
-use design_storage::{Screenshot, ScreenshotRepository};
-use rusqlite::{params, Connection};
+use design_storage::{open_connection, Screenshot, ScreenshotRepository};
+use rusqlite::params;
 use serde::{Deserialize, Serialize};
 use tauri::State;
 use uuid::Uuid;
@@ -135,7 +135,7 @@ fn list_screenshots_blocking(
     db_path: PathBuf,
     project_id: Uuid,
 ) -> CommandResult<Vec<ScreenshotView>> {
-    let connection = Connection::open(db_path).map_err(command_error)?;
+    let connection = open_connection(&db_path).map_err(command_error)?;
     let mut statement = connection
         .prepare(
             "SELECT id, project_id, relative_path, sha256, media_type, width, height, page_name, scene, sort_order, created_at
@@ -160,7 +160,7 @@ fn update_screenshot_metadata_blocking(
     scene: String,
     sort_order: i64,
 ) -> CommandResult<ScreenshotView> {
-    let connection = Connection::open(&db_path).map_err(command_error)?;
+    let connection = open_connection(&db_path).map_err(command_error)?;
     let changed = connection
         .execute(
             "UPDATE screenshots
@@ -183,7 +183,7 @@ fn update_screenshot_metadata_blocking(
 }
 
 fn get_screenshot(
-    connection: &Connection,
+    connection: &rusqlite::Connection,
     project_id: Uuid,
     screenshot_id: Uuid,
 ) -> CommandResult<ScreenshotView> {
