@@ -1,5 +1,7 @@
 import { BrowserRouter, Link, Route, Routes } from "react-router-dom";
 
+import { AnalysisStartPage } from "../features/analysis/AnalysisStartPage";
+import { ProviderSettingsPage } from "../features/providers/ProviderSettingsPage";
 import { ProjectListPage } from "../features/projects/ProjectListPage";
 import { ScreenshotManagerPage } from "../features/screenshots/ScreenshotManagerPage";
 
@@ -16,8 +18,8 @@ export function App() {
         <Routes>
           <Route path="/" element={<ProjectListPage />} />
           <Route path="/projects/:projectId" element={<ScreenshotManagerPage />} />
-          <Route path="/projects/:projectId/providers" element={<p>Provider setup</p>} />
-          <Route path="/projects/:projectId/analyze" element={<p>Analysis setup</p>} />
+          <Route path="/projects/:projectId/providers" element={<ProviderSettingsPage />} />
+          <Route path="/projects/:projectId/analyze" element={<AnalysisStartPage />} />
           <Route path="/projects/:projectId/workbench" element={<p>Rule workbench</p>} />
           <Route path="/projects/:projectId/exports" element={<p>Exports</p>} />
         </Routes>
