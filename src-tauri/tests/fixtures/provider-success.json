@@ -1,0 +1,41 @@
+{
+  "metadata": {
+    "schema_version": "1.0.0",
+    "project_id": "00000000-0000-0000-0000-000000000000",
+    "platform": "mobile",
+    "provider_id": null,
+    "model": null,
+    "source_screenshot_ids": [],
+    "excluded_terms": ["OriginalBrand"],
+    "created_at": "2026-07-01T00:00:00Z"
+  },
+  "intent": [
+    {
+      "id": "11111111-1111-1111-1111-111111111111",
+      "category": "Design intent",
+      "statement": "Use a calm finance dashboard tone with clear hierarchy.",
+      "kind": "recommendation",
+      "scope": "global",
+      "value": null,
+      "evidence_ids": ["22222222-2222-2222-2222-222222222222"],
+      "confidence": 0.9,
+      "status": "accepted",
+      "source": "model"
+    }
+  ],
+  "tokens": [],
+  "layout": [],
+  "components": [],
+  "assets": [],
+  "motion": [],
+  "constraints": [],
+  "evidence": [
+    {
+      "id": "22222222-2222-2222-2222-222222222222",
+      "screenshot_id": "00000000-0000-0000-0000-000000000000",
+      "region": null,
+      "description": "Dashboard card hierarchy"
+    }
+  ],
+  "uncertainties": []
+}
