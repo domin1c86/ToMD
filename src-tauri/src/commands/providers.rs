@@ -252,6 +252,7 @@ fn provider_kind_to_str(kind: ProviderKind) -> &'static str {
         ProviderKind::Anthropic => "anthropic",
         ProviderKind::Gemini => "gemini",
         ProviderKind::OpenAiCompatible => "open_ai_compatible",
+        ProviderKind::AnthropicCompatible => "anthropic_compatible",
     }
 }
 
@@ -261,6 +262,7 @@ fn provider_kind_from_str(value: &str) -> rusqlite::Result<ProviderKind> {
         "anthropic" => Ok(ProviderKind::Anthropic),
         "gemini" => Ok(ProviderKind::Gemini),
         "open_ai_compatible" => Ok(ProviderKind::OpenAiCompatible),
+        "anthropic_compatible" => Ok(ProviderKind::AnthropicCompatible),
         _ => Err(rusqlite::Error::InvalidParameterName(format!(
             "invalid provider kind: {value}"
         ))),
@@ -290,6 +292,25 @@ mod tests {
         .unwrap();
 
         assert_eq!(input.kind, ProviderKind::OpenAiCompatible);
+    }
+
+    #[test]
+    fn save_provider_input_accepts_anthropic_compatible_provider_kind() {
+        let input = serde_json::from_value::<SaveProviderInput>(serde_json::json!({
+            "name": "Claude-compatible",
+            "kind": "anthropic_compatible",
+            "baseUrl": "http://localhost:11434",
+            "model": "vision",
+            "apiKey": "secret"
+        }))
+        .unwrap();
+
+        assert_eq!(input.kind, ProviderKind::AnthropicCompatible);
+        assert_eq!(provider_kind_to_str(input.kind), "anthropic_compatible");
+        assert_eq!(
+            provider_kind_from_str("anthropic_compatible").unwrap(),
+            ProviderKind::AnthropicCompatible
+        );
     }
 
     #[test]

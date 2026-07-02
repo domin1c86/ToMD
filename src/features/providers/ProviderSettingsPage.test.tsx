@@ -49,6 +49,33 @@ describe("ProviderSettingsPage", () => {
     expect(screen.queryByDisplayValue("sk-secret")).not.toBeInTheDocument();
   });
 
+  it("saves an Anthropic-compatible provider endpoint", async () => {
+    const user = userEvent.setup();
+    mockedDesktop.saveProvider.mockResolvedValue(
+      provider({
+        kind: "anthropic_compatible",
+        base_url: "https://claude-compatible.example.com",
+      }),
+    );
+    render(<App />);
+
+    await user.selectOptions(await screen.findByLabelText("Provider type"), "anthropic_compatible");
+    await user.type(screen.getByLabelText("Provider name"), "Claude-compatible endpoint");
+    await user.type(screen.getByLabelText("Base URL"), "https://claude-compatible.example.com");
+    await user.type(screen.getByLabelText("Model name"), "third-party-vision");
+    await user.type(screen.getByLabelText("API key"), "sk-secret");
+    await user.click(screen.getByRole("button", { name: "Save provider" }));
+
+    expect(mockedDesktop.saveProvider).toHaveBeenCalledWith({
+      name: "Claude-compatible endpoint",
+      kind: "anthropic_compatible",
+      baseUrl: "https://claude-compatible.example.com",
+      model: "third-party-vision",
+      apiKey: "sk-secret",
+    });
+    expect(await screen.findByText("Stored securely")).toBeVisible();
+  });
+
   it("tests provider connectivity and blocks analysis when image input is unsupported", async () => {
     const user = userEvent.setup();
     mockedDesktop.listProviders.mockResolvedValue([provider()]);

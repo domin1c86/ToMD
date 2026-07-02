@@ -7,6 +7,7 @@ A local-first Tauri desktop app that turns website or app screenshots into a rev
 - Creates local projects.
 - Imports local reference screenshots.
 - Configures a multimodal AI provider without exposing stored keys to the frontend.
+- Supports OpenAI, Anthropic, Gemini, OpenAI-compatible, and Anthropic-compatible provider endpoints.
 - Shows exactly what will leave the device before analysis.
 - Lets users accept, edit, or reject extracted design rules.
 - Exports timestamped Markdown history from backend-validated design spec snapshots.

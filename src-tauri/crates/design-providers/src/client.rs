@@ -164,6 +164,9 @@ pub fn build_provider(
         ProviderKind::OpenAiCompatible => {
             Box::new(OpenAiCompatibleProvider::new(config, secret, client))
         }
+        ProviderKind::AnthropicCompatible => {
+            Box::new(AnthropicProvider::new(config, secret, client))
+        }
     };
 
     Ok(provider)

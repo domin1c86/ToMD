@@ -19,6 +19,7 @@ pub enum ProviderKind {
     Anthropic,
     Gemini,
     OpenAiCompatible,
+    AnthropicCompatible,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

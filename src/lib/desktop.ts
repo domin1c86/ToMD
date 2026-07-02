@@ -29,7 +29,8 @@ export type ProviderKind =
   | "open_ai"
   | "anthropic"
   | "gemini"
-  | "open_ai_compatible";
+  | "open_ai_compatible"
+  | "anthropic_compatible";
 
 export type Provider = {
   id: string;

@@ -18,7 +18,9 @@
 
 ## Provider setup
 
-Open the provider setup page from a project after importing screenshots. Choose OpenAI, Anthropic, Gemini, or an OpenAI-compatible endpoint. API keys are submitted once and are not refilled into the form. Replacing a key requires entering a fresh value.
+Open the provider setup page from a project after importing screenshots. Choose OpenAI, Anthropic, Gemini, an OpenAI-compatible endpoint, or an Anthropic-compatible endpoint. API keys are submitted once and are not refilled into the form. Replacing a key requires entering a fresh value.
+
+Use OpenAI-compatible for providers that expose OpenAI-style Chat Completions or Responses-compatible image input. Use Anthropic-compatible for providers that expose an Anthropic Messages-style endpoint with `x-api-key`, `anthropic-version`, image content blocks, and text content blocks.
 
 Run the connection test before continuing. Analysis remains blocked until the selected provider reports image input support.
 

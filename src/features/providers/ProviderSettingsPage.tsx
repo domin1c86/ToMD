@@ -9,6 +9,7 @@ const defaultBaseUrls: Record<ProviderKind, string> = {
   anthropic: "https://api.anthropic.com",
   gemini: "https://generativelanguage.googleapis.com/v1beta",
   open_ai_compatible: "",
+  anthropic_compatible: "",
 };
 
 export function ProviderSettingsPage() {
@@ -105,6 +106,7 @@ export function ProviderSettingsPage() {
             <option value="anthropic">Anthropic</option>
             <option value="gemini">Gemini</option>
             <option value="open_ai_compatible">OpenAI-compatible</option>
+            <option value="anthropic_compatible">Anthropic-compatible</option>
           </select>
         </label>
         <label>
