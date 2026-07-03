@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { open } from "@tauri-apps/plugin-dialog";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { useI18n } from "../../app/i18n";
@@ -20,6 +21,7 @@ export function ScreenshotManagerPage() {
   const [paths, setPaths] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectingFiles, setSelectingFiles] = useState(false);
 
   const sortedScreenshots = useMemo(
     () => [...screenshots].sort((a, b) => a.sort_order - b.sort_order),
@@ -64,6 +66,33 @@ export function ScreenshotManagerPage() {
       await load();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
+    }
+  };
+
+  const chooseScreenshotFiles = async () => {
+    setSelectingFiles(true);
+    setError(null);
+    try {
+      const selected = await open({
+        multiple: true,
+        filters: [
+          {
+            name: "Images",
+            extensions: ["png", "jpg", "jpeg", "webp"],
+          },
+        ],
+      });
+      const selectedPaths = Array.isArray(selected) ? selected : selected ? [selected] : [];
+      if (selectedPaths.length === 0) {
+        return;
+      }
+      await desktop.importScreenshots({ projectId, paths: selectedPaths });
+      setPaths("");
+      await load();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setSelectingFiles(false);
     }
   };
 
@@ -145,6 +174,21 @@ export function ScreenshotManagerPage() {
                 : "支持 PNG、JPG、WebP。建议包含完整核心页面与典型状态。"}
             </p>
             <p>{isEnglish ? "No images are sent before analysis." : "分析前不会发送任何图片。"}</p>
+            <button
+              className="button-primary"
+              type="button"
+              aria-label="Choose screenshot files"
+              disabled={selectingFiles}
+              onClick={() => void chooseScreenshotFiles()}
+            >
+              {selectingFiles
+                ? isEnglish
+                  ? "Opening picker…"
+                  : "正在打开选择器…"
+                : isEnglish
+                  ? "Choose image files"
+                  : "选择图片文件"}
+            </button>
           </div>
         </div>
         <label className="field">
