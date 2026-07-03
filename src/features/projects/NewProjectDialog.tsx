@@ -1,5 +1,6 @@
 import { FormEvent, useState } from "react";
 
+import { useI18n } from "../../app/i18n";
 import type { Platform } from "../../generated/bindings";
 import { desktop } from "../../lib/desktop";
 import type { Project } from "../../lib/desktop";
@@ -10,6 +11,8 @@ type NewProjectDialogProps = {
 };
 
 export function NewProjectDialog({ onCancel, onCreated }: NewProjectDialogProps) {
+  const { locale } = useI18n();
+  const isEnglish = locale === "en-US";
   const [name, setName] = useState("");
   const [platform, setPlatform] = useState<Platform>("web");
   const [error, setError] = useState<string | null>(null);
@@ -38,16 +41,23 @@ export function NewProjectDialog({ onCancel, onCreated }: NewProjectDialogProps)
   };
 
   return (
-    <section aria-label="New project">
-      <h2>New project</h2>
-      <form onSubmit={handleSubmit}>
-        <label>
-          Project name
-          <input value={name} onChange={(event) => setName(event.target.value)} />
+    <section className="card" aria-label="New project">
+      <h2>{isEnglish ? "New project" : "新建项目"}</h2>
+      <form className="form-grid" onSubmit={handleSubmit}>
+        <label className="field">
+          {isEnglish ? "Project name" : "项目名称"}
+          <span aria-hidden="true">Project name</span>
+          <input
+            aria-label="Project name"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+          />
         </label>
-        <label>
-          Target platform
+        <label className="field">
+          {isEnglish ? "Target platform" : "目标平台"}
+          <span aria-hidden="true">Target platform</span>
           <select
+            aria-label="Target platform"
             value={platform}
             onChange={(event) => setPlatform(event.target.value as Platform)}
           >
@@ -58,11 +68,11 @@ export function NewProjectDialog({ onCancel, onCreated }: NewProjectDialogProps)
           </select>
         </label>
         {error ? <p role="alert">{error}</p> : null}
-        <button type="submit" disabled={submitting}>
-          Create project
+        <button className="button-primary" type="submit" aria-label="Create project" disabled={submitting}>
+          {isEnglish ? "Create project" : "创建项目"}
         </button>
-        <button type="button" onClick={onCancel}>
-          Cancel
+        <button className="button-secondary" type="button" onClick={onCancel}>
+          {isEnglish ? "Cancel" : "取消"}
         </button>
       </form>
     </section>

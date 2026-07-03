@@ -40,6 +40,8 @@ describe("ScreenshotManagerPage", () => {
     render(<App />);
 
     expect(await screen.findByRole("heading", { name: "Reference screenshots" })).toBeVisible();
+    expect(screen.getByText("导入参考截图")).toBeVisible();
+    expect(screen.getByText("分析前不会发送任何图片。")).toBeVisible();
     expect(screen.getByText("No screenshots imported yet.")).toBeVisible();
     expect(screen.getByRole("button", { name: "Configure analysis" })).toBeDisabled();
   });

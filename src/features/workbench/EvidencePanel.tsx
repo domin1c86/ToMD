@@ -13,11 +13,11 @@ export function EvidencePanel({ evidence, selectedRule }: EvidencePanelProps) {
     selectedRule !== null && selectedRule.evidence_ids.some((id) => !evidence.some((item) => item.id === id));
 
   return (
-    <section aria-label="Evidence panel">
+    <section className="page-panel" aria-label="Evidence panel">
       <h2>Evidence</h2>
       {!selectedRule ? <p>Select a rule to inspect evidence.</p> : null}
       {selectedEvidence.map((item) => (
-        <article key={item.id}>
+        <article className="card" key={item.id}>
           <p>Highlighted screenshot: {item.screenshot_id}</p>
           <p>{item.description}</p>
           {item.region ? (

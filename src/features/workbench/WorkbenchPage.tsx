@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 
+import { useI18n } from "../../app/i18n";
 import type { DesignSpec, Rule, RuleStatus } from "../../generated/bindings";
 import { desktop } from "../../lib/desktop";
 import { EvidencePanel } from "./EvidencePanel";
@@ -10,6 +11,8 @@ import { getAllRules, getRuleGroups, replaceRuleInSpec } from "./ruleGroups";
 
 export function WorkbenchPage() {
   const { projectId = "" } = useParams();
+  const { locale } = useI18n();
+  const isEnglish = locale === "en-US";
   const [spec, setSpec] = useState<DesignSpec | null>(null);
   const [selectedRuleId, setSelectedRuleId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -82,27 +85,34 @@ export function WorkbenchPage() {
 
   return (
     <section>
-      <h2>Rule workbench</h2>
+      <div className="page-header">
+        <div>
+          <h2>{isEnglish ? "Rule review workbench" : "规则审核工作台"}</h2>
+          <p>
+            {isEnglish
+              ? "Review AI-extracted rules one by one. Only accepted or edited rules go into DESIGN.md."
+              : "逐条确认 AI 提取的设计规则。只有 accepted / edited 规则会进入 DESIGN.md。"}
+          </p>
+          <p>Rule workbench</p>
+        </div>
+        <Link className="button-primary" to={`/projects/${projectId}/exports`}>
+          {isEnglish ? "Export DESIGN.md" : "去导出 DESIGN.md"}
+        </Link>
+      </div>
       {loading ? <p>Loading design spec…</p> : null}
       {error ? <p role="alert">{error}</p> : null}
 
       {spec ? (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "24% 46% 30%",
-            gap: "1rem",
-            alignItems: "start",
-          }}
-        >
+        <div className="workbench-grid">
           <EvidencePanel evidence={spec.evidence} selectedRule={selectedRule} />
-          <section aria-label="Rule groups">
+          <section className="page-panel" aria-label="Rule groups">
             <h2>Rules</h2>
             {getRuleGroups(spec).map((group) => (
               <section key={group.key} aria-label={`${group.key} rules`}>
                 <h3>{group.key}</h3>
                 {group.rules.map((rule) => (
                   <button
+                    className="button-secondary"
                     key={rule.id}
                     type="button"
                     aria-pressed={rule.id === selectedRule?.id}

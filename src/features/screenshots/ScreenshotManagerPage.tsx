@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
+import { useI18n } from "../../app/i18n";
 import { desktop } from "../../lib/desktop";
 import type { Project, Screenshot } from "../../lib/desktop";
 
@@ -12,6 +13,8 @@ type EditableScreenshot = Screenshot & {
 export function ScreenshotManagerPage() {
   const { projectId = "" } = useParams();
   const navigate = useNavigate();
+  const { locale, t } = useI18n();
+  const isEnglish = locale === "en-US";
   const [project, setProject] = useState<Project | null>(null);
   const [screenshots, setScreenshots] = useState<EditableScreenshot[]>([]);
   const [paths, setPaths] = useState("");
@@ -100,9 +103,30 @@ export function ScreenshotManagerPage() {
   };
 
   return (
-    <section>
-      <Link to="/">Projects</Link>
-      <h2>Reference screenshots</h2>
+    <section className="page-grid">
+      <div className="page-panel">
+      <Link className="muted" to="/">Projects</Link>
+      <div className="page-header">
+        <div>
+          <h2 aria-label="Reference screenshots">
+            {isEnglish ? "Import reference screenshots" : "导入参考截图"}
+          </h2>
+          <p>
+            {isEnglish
+              ? "Import app or website screenshots, then organize page names, scenes, and dimensions."
+              : "导入您的应用或网站截图，支持批量整理页面名称、场景和尺寸信息。"}
+          </p>
+        </div>
+        <button
+          className="button-primary"
+          type="button"
+          aria-label="Configure analysis"
+          disabled={sortedScreenshots.length === 0}
+          onClick={() => navigate(`/projects/${projectId}/providers`)}
+        >
+          {isEnglish ? "Next: configure provider" : "下一步：配置模型"}
+        </button>
+      </div>
       {project ? (
         <p>
           {project.name} · {project.platform}
@@ -111,28 +135,51 @@ export function ScreenshotManagerPage() {
       {loading ? <p>Loading screenshots…</p> : null}
       {error ? <p role="alert">{error}</p> : null}
 
-      <form onSubmit={importScreenshots}>
-        <label>
-          Local screenshot paths
-          <textarea value={paths} onChange={(event) => setPaths(event.target.value)} />
+      <form className="form-grid" onSubmit={importScreenshots}>
+        <div className="upload-zone">
+          <div>
+            <h3>{isEnglish ? "Drop images here, or paste local paths" : "拖拽图片到此处，或粘贴本地路径"}</h3>
+            <p className="muted">
+              {isEnglish
+                ? "PNG, JPG, and WebP are supported. Include core pages and typical states."
+                : "支持 PNG、JPG、WebP。建议包含完整核心页面与典型状态。"}
+            </p>
+            <p>{isEnglish ? "No images are sent before analysis." : "分析前不会发送任何图片。"}</p>
+          </div>
+        </div>
+        <label className="field">
+          {isEnglish ? "Local screenshot paths" : "本地截图路径"}
+          <span aria-hidden="true">
+            {isEnglish ? "One path per line, or comma separated" : "一行一个路径，或用逗号分隔"}
+          </span>
+          <textarea
+            aria-label="Local screenshot paths"
+            value={paths}
+            onChange={(event) => setPaths(event.target.value)}
+          />
         </label>
-        <button type="submit">Import screenshots</button>
+        <button className="button-secondary" type="submit" aria-label="Import screenshots">
+          {isEnglish ? "Import screenshots" : "导入截图"}
+        </button>
       </form>
 
-      {sortedScreenshots.length === 0 && !loading ? <p>No screenshots imported yet.</p> : null}
+      {sortedScreenshots.length === 0 && !loading ? (
+        <div className="empty-state">
+          <h3>{isEnglish ? "No screenshots imported" : "还没有导入截图"}</h3>
+          <p>
+            {isEnglish
+              ? "Import at least one screenshot to continue. Three or more references produce stronger cross-screen patterns."
+              : "至少导入 1 张后可以继续配置分析；3 张以上能更稳定地提取跨页面模式。"}
+          </p>
+          <p>No screenshots imported yet.</p>
+        </div>
+      ) : null}
       {sortedScreenshots.length > 0 && sortedScreenshots.length < 3 ? (
-        <p>Recommendation: import at least 3 screenshots for stronger patterns.</p>
+        <p className="alert">Recommendation: import at least 3 screenshots for stronger patterns.</p>
       ) : null}
 
-      <button
-        type="button"
-        disabled={sortedScreenshots.length === 0}
-        onClick={() => navigate(`/projects/${projectId}/providers`)}
-      >
-        Configure analysis
-      </button>
-
       {sortedScreenshots.length > 0 ? (
+        <div className="table-shell">
         <table>
           <thead>
             <tr>
@@ -173,10 +220,18 @@ export function ScreenshotManagerPage() {
                 </td>
                 <td>{screenshot.media_type}</td>
                 <td>
-                  <button type="button" onClick={() => void saveMetadata(screenshot)}>
+                  <button
+                    className="button-secondary"
+                    type="button"
+                    onClick={() => void saveMetadata(screenshot)}
+                  >
                     Save metadata for {screenshot.page_name}
                   </button>
-                  <button type="button" onClick={() => void removeScreenshot(screenshot)}>
+                  <button
+                    className="button-danger"
+                    type="button"
+                    onClick={() => void removeScreenshot(screenshot)}
+                  >
                     Remove {screenshot.page_name}
                   </button>
                 </td>
@@ -184,7 +239,18 @@ export function ScreenshotManagerPage() {
             ))}
           </tbody>
         </table>
+        </div>
       ) : null}
+      </div>
+      <aside className="help-panel">
+        <h3>{isEnglish ? "What happens next" : "接下来会发生什么"}</h3>
+        <p>{isEnglish ? "1. Local preprocessing reads image dimensions, format, and metadata." : "1. 本地预处理：只读取图片尺寸、格式和摘要信息。"}</p>
+        <p>{isEnglish ? "2. AI analysis sends selected screenshots only after disclosure confirmation." : "2. 发送 AI 分析：只有在披露页确认后才发送选中的截图。"}</p>
+        <p>{isEnglish ? "3. The model extracts colors, layout, components, and constraints." : "3. 提取设计语言：生成颜色、布局、组件和约束规则。"}</p>
+        <hr />
+        <h3>{t("privacyTitle")}</h3>
+        <p>{t("privacyBody")}</p>
+      </aside>
     </section>
   );
 }

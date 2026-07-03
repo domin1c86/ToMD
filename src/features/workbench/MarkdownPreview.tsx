@@ -9,7 +9,7 @@ export function MarkdownPreview({ spec }: MarkdownPreviewProps) {
   const markdown = spec ? compilePreviewMarkdown(spec) : "";
 
   return (
-    <section aria-label="Markdown preview">
+    <section className="page-panel" aria-label="Markdown preview">
       <h2>Markdown preview</h2>
       <pre data-testid="markdown-preview">{markdown}</pre>
     </section>

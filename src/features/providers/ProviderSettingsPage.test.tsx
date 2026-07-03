@@ -31,6 +31,8 @@ describe("ProviderSettingsPage", () => {
     const user = userEvent.setup();
     render(<App />);
 
+    expect((await screen.findAllByText("配置 AI 模型")).length).toBeGreaterThan(0);
+    expect(screen.getByText("OpenAI-compatible 适合兼容 Chat Completions 的第三方端点。")).toBeVisible();
     await user.selectOptions(await screen.findByLabelText("Provider type"), "open_ai_compatible");
     await user.type(screen.getByLabelText("Provider name"), "My endpoint");
     await user.type(screen.getByLabelText("Base URL"), "https://ai.example.com/v1");

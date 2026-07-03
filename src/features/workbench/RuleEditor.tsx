@@ -29,28 +29,41 @@ export function RuleEditor({ rule, onMutate }: RuleEditorProps) {
   };
 
   return (
-    <section aria-label="Selected rule editor">
+    <section className="card" aria-label="Selected rule editor">
       <h2>Rule editor</h2>
       <p>{rule.id}</p>
       <p>Status: {rule.status}</p>
+      <p aria-label={`Status badge: ${rule.status}`}>
+        <span className={`status-badge status-badge--${rule.status}`}>{rule.status}</span>
+      </p>
       <p>Source: {rule.source}</p>
-      {rule.confidence < 0.6 ? <p>Low confidence</p> : null}
+      {rule.confidence < 0.6 ? <p className="alert">Low confidence</p> : null}
 
       <form onSubmit={saveEdit}>
-        <label>
+        <label className="field">
           Rule statement
           <textarea
             value={draftStatement}
             onChange={(event) => setDraftStatement(event.target.value)}
           />
         </label>
-        <button type="submit">Save edit</button>
+        <button className="button-secondary" type="submit">
+          Save edit
+        </button>
       </form>
 
-      <button type="button" onClick={() => void onMutate({ status: "accepted" })}>
+      <button
+        className="button-primary"
+        type="button"
+        onClick={() => void onMutate({ status: "accepted" })}
+      >
         Accept rule
       </button>
-      <button type="button" onClick={() => void onMutate({ status: "rejected" })}>
+      <button
+        className="button-danger"
+        type="button"
+        onClick={() => void onMutate({ status: "rejected" })}
+      >
         Reject rule
       </button>
     </section>

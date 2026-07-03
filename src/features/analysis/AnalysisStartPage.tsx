@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
+import { useI18n } from "../../app/i18n";
 import { desktop } from "../../lib/desktop";
 import type { AnalysisPreview, Provider, Screenshot } from "../../lib/desktop";
 
 export function AnalysisStartPage() {
   const { projectId = "" } = useParams();
   const navigate = useNavigate();
+  const { locale } = useI18n();
+  const isEnglish = locale === "en-US";
   const [providers, setProviders] = useState<Provider[]>([]);
   const [screenshots, setScreenshots] = useState<Screenshot[]>([]);
   const [preview, setPreview] = useState<AnalysisPreview | null>(null);
@@ -92,8 +95,18 @@ export function AnalysisStartPage() {
   };
 
   return (
-    <section>
-      <h2>Transmission disclosure</h2>
+    <section className="page-grid">
+      <div className="page-panel">
+      <div className="page-header">
+        <div>
+          <h2>{isEnglish ? "Confirm before sending" : "发送前确认"}</h2>
+          <p>
+            {isEnglish
+              ? "Before this step, screenshots stay on this device. Confirm the provider, model, and image count before sending."
+              : "在这一步之前，截图不会离开本机。请确认 Provider、模型和图片数量后再发送。"}
+          </p>
+        </div>
+      </div>
       {loading ? <p>Preparing disclosure…</p> : null}
       {error ? <p role="alert">{error}</p> : null}
 
@@ -103,7 +116,8 @@ export function AnalysisStartPage() {
       ) : null}
 
       {preview ? (
-        <section aria-label="What leaves this device">
+        <section className="card" aria-label="What leaves this device">
+          <h3>{isEnglish ? "What will be sent" : "会发送什么"}</h3>
           <p>Provider: {preview.provider_name}</p>
           <p>Model: {preview.model}</p>
           <p>{preview.image_count} images will be sent</p>
@@ -114,12 +128,30 @@ export function AnalysisStartPage() {
       ) : null}
 
       <button
+        className="button-primary"
         type="button"
+        aria-label="Send and analyze"
         disabled={!preview || analyzing}
         onClick={() => void sendAnalysis()}
       >
-        Send and analyze
+        {isEnglish ? "Send and analyze" : "发送并分析"}
       </button>
+      </div>
+      <aside className="help-panel">
+        <h3>{isEnglish ? "What is not sent" : "不会发送什么"}</h3>
+        <p>
+          {isEnglish
+            ? "Local paths, the database, export history, and saved plaintext API keys are not sent."
+            : "不会发送本地路径、数据库、导出历史或已保存的 API Key 明文。"}
+        </p>
+        <hr />
+        <h3>{isEnglish ? "What if it fails?" : "失败后怎么办？"}</h3>
+        <p>
+          {isEnglish
+            ? "If the provider fails, project state is preserved. Return to provider setup to switch endpoint or model."
+            : "如果 Provider 报错，项目状态会保留，你可以返回模型配置页更换端点或模型。"}
+        </p>
+      </aside>
     </section>
   );
 }

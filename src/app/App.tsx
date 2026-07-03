@@ -6,17 +6,20 @@ import { ProviderSettingsPage } from "../features/providers/ProviderSettingsPage
 import { ProjectListPage } from "../features/projects/ProjectListPage";
 import { ScreenshotManagerPage } from "../features/screenshots/ScreenshotManagerPage";
 import { WorkbenchPage } from "../features/workbench/WorkbenchPage";
+import { AppShell } from "./AppShell";
+import { I18nProvider } from "./i18n";
+import { ThemeProvider } from "./theme";
 
 export function App() {
   return (
     <BrowserRouter>
-      <header>
-        <h1>Design Language Extractor</h1>
-        <nav aria-label="Primary navigation">
-          <Link to="/">Projects</Link>
-        </nav>
-      </header>
-      <main>
+      <ThemeProvider>
+        <I18nProvider>
+          <AppShell>
+            <h1 className="sr-only">Design Language Extractor</h1>
+            <Link className="sr-only" to="/">
+              Projects
+            </Link>
         <Routes>
           <Route path="/" element={<ProjectListPage />} />
           <Route path="/projects/:projectId" element={<ScreenshotManagerPage />} />
@@ -25,7 +28,9 @@ export function App() {
           <Route path="/projects/:projectId/workbench" element={<WorkbenchPage />} />
           <Route path="/projects/:projectId/exports" element={<ExportHistoryPage />} />
         </Routes>
-      </main>
+          </AppShell>
+        </I18nProvider>
+      </ThemeProvider>
     </BrowserRouter>
   );
 }
