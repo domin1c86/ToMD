@@ -5,6 +5,7 @@ src-tauri/gen/schemas/
 .superpowers/
 *.tsbuildinfo
 
+ci.yml
 .env
 .env.*
 !.env.example
