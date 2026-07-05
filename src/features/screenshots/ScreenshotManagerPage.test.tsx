@@ -12,6 +12,7 @@ vi.mock("../../lib/desktop", () => ({
     importScreenshots: vi.fn(),
     updateScreenshotMetadata: vi.fn(),
     removeScreenshot: vi.fn(),
+    screenshotUrl: vi.fn(),
     listProviders: vi.fn(),
   },
 }));
@@ -34,6 +35,7 @@ describe("ScreenshotManagerPage", () => {
       },
     ]);
     mockedDesktop.listScreenshots.mockResolvedValue([]);
+    mockedDesktop.screenshotUrl.mockReturnValue("asset://localhost/shot-1.png");
   });
 
   it("shows screenshot empty state and disables analysis until at least one screenshot exists", async () => {
@@ -127,6 +129,7 @@ function screenshot(overrides: Partial<Screenshot> = {}): Screenshot {
     id: "shot-1",
     project_id: "project-1",
     relative_path: "screenshots/shot-1.png",
+    absolute_path: "C:/app-data/projects/project-1/screenshots/shot-1.png",
     sha256: "hash",
     media_type: "image/png",
     width: 1200,

@@ -4,6 +4,7 @@ import { Link, useParams } from "react-router-dom";
 import { useI18n } from "../../app/i18n";
 import type { DesignSpec, Rule, RuleStatus } from "../../generated/bindings";
 import { desktop } from "../../lib/desktop";
+import type { Screenshot } from "../../lib/desktop";
 import { EvidencePanel } from "./EvidencePanel";
 import { MarkdownPreview } from "./MarkdownPreview";
 import { RuleEditor } from "./RuleEditor";
@@ -14,6 +15,7 @@ export function WorkbenchPage() {
   const { locale } = useI18n();
   const isEnglish = locale === "en-US";
   const [spec, setSpec] = useState<DesignSpec | null>(null);
+  const [screenshots, setScreenshots] = useState<Screenshot[]>([]);
   const [selectedRuleId, setSelectedRuleId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -28,9 +30,13 @@ export function WorkbenchPage() {
       setLoading(true);
       setError(null);
       try {
-        const loadedSpec = await desktop.getDesignSpec({ projectId });
+        const [loadedSpec, loadedScreenshots] = await Promise.all([
+          desktop.getDesignSpec({ projectId }),
+          desktop.listScreenshots({ projectId }),
+        ]);
         if (!cancelled) {
           setSpec(loadedSpec);
+          setScreenshots(loadedScreenshots);
           setSelectedRuleId(getAllRules(loadedSpec)[0]?.id ?? null);
         }
       } catch (caught) {
@@ -104,7 +110,7 @@ export function WorkbenchPage() {
 
       {spec ? (
         <div className="workbench-grid">
-          <EvidencePanel evidence={spec.evidence} selectedRule={selectedRule} />
+          <EvidencePanel evidence={spec.evidence} screenshots={screenshots} selectedRule={selectedRule} />
           <section className="page-panel" aria-label="Rule groups">
             <h2>Rules</h2>
             {getRuleGroups(spec).map((group) => (

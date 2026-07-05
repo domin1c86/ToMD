@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
+import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 
 import type { DesignSpec, Platform, RuleStatus } from "../generated/bindings";
 
@@ -15,6 +15,7 @@ export type Screenshot = {
   id: string;
   project_id: string;
   relative_path: string;
+  absolute_path: string;
   sha256: string;
   media_type: string;
   width: number;
@@ -163,6 +164,8 @@ export const desktop = {
     ),
   removeScreenshot: (input: RemoveScreenshotInput) =>
     command<void, RemoveScreenshotInput>("remove_screenshot", input),
+  /** Local asset-protocol URL for rendering a stored screenshot in the webview. */
+  screenshotUrl: (screenshot: Screenshot) => convertFileSrc(screenshot.absolute_path),
 
   listProviders: () => command<Provider[]>("list_providers"),
   saveProvider: (input: SaveProviderInput) =>

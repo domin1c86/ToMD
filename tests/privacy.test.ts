@@ -15,6 +15,7 @@ vi.mock("../src/lib/desktop", () => ({
     importScreenshots: vi.fn(),
     updateScreenshotMetadata: vi.fn(),
     removeScreenshot: vi.fn(),
+    screenshotUrl: vi.fn(),
     listProviders: vi.fn(),
     saveProvider: vi.fn(),
     testProvider: vi.fn(),
@@ -60,6 +61,7 @@ describe("local-first MVP privacy flow", () => {
       return project;
     });
     mockedDesktop.listScreenshots.mockImplementation(async () => screenshots);
+    mockedDesktop.screenshotUrl.mockReturnValue("asset://localhost/shot-1.png");
     mockedDesktop.importScreenshots.mockImplementation(async ({ projectId }) => {
       screenshots = [screenshotFixture({ project_id: projectId })];
       return screenshots;
@@ -168,6 +170,7 @@ function screenshotFixture(overrides: Partial<Screenshot> = {}): Screenshot {
     id: "shot-1",
     project_id: "project-1",
     relative_path: "screenshots/shot-1.png",
+    absolute_path: "C:/app-data/projects/project-1/screenshots/shot-1.png",
     sha256: "hash",
     media_type: "image/png",
     width: 1200,

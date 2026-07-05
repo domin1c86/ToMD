@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use chrono::{DateTime, Utc};
 use design_storage::{open_connection, Screenshot, ScreenshotRepository};
@@ -46,6 +46,7 @@ pub struct ScreenshotView {
     id: String,
     project_id: String,
     relative_path: String,
+    absolute_path: String,
     sha256: String,
     media_type: String,
     width: u32,
@@ -56,6 +57,17 @@ pub struct ScreenshotView {
     created_at: DateTime<Utc>,
 }
 
+/// Absolute location of a stored screenshot so the webview can render it
+/// through the asset protocol. Never sent to providers.
+fn absolute_screenshot_path(app_data_dir: &Path, project_id: &str, relative_path: &str) -> String {
+    app_data_dir
+        .join("projects")
+        .join(project_id)
+        .join(relative_path)
+        .to_string_lossy()
+        .into_owned()
+}
+
 #[tauri::command]
 pub async fn list_screenshots(
     state: State<'_, AppState>,
@@ -63,9 +75,12 @@ pub async fn list_screenshots(
 ) -> CommandResult<Vec<ScreenshotView>> {
     let project_id = parse_uuid(&input.project_id, "projectId")?;
     let db_path = state.db_path.clone();
-    tauri::async_runtime::spawn_blocking(move || list_screenshots_blocking(db_path, project_id))
-        .await
-        .map_err(command_error)?
+    let app_data_dir = state.app_data_dir.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        list_screenshots_blocking(db_path, app_data_dir, project_id)
+    })
+    .await
+    .map_err(command_error)?
 }
 
 #[tauri::command]
@@ -88,7 +103,7 @@ pub async fn import_screenshots(
             .import_screenshot(project_id, &path, &page_name, "")
             .await
             .map_err(command_error)?;
-        imported.push(ScreenshotView::from(screenshot));
+        imported.push(screenshot_view(screenshot, &state.app_data_dir));
     }
 
     Ok(imported)
@@ -102,9 +117,11 @@ pub async fn update_screenshot_metadata(
     let project_id = parse_uuid(&input.project_id, "projectId")?;
     let screenshot_id = parse_uuid(&input.screenshot_id, "screenshotId")?;
     let db_path = state.db_path.clone();
+    let app_data_dir = state.app_data_dir.clone();
     tauri::async_runtime::spawn_blocking(move || {
         update_screenshot_metadata_blocking(
             db_path,
+            app_data_dir,
             project_id,
             screenshot_id,
             input.page_name,
@@ -133,6 +150,7 @@ pub async fn remove_screenshot(
 
 fn list_screenshots_blocking(
     db_path: PathBuf,
+    app_data_dir: PathBuf,
     project_id: Uuid,
 ) -> CommandResult<Vec<ScreenshotView>> {
     let connection = open_connection(&db_path).map_err(command_error)?;
@@ -145,7 +163,9 @@ fn list_screenshots_blocking(
         )
         .map_err(command_error)?;
     let screenshots = statement
-        .query_map(params![project_id.to_string()], screenshot_from_row)
+        .query_map(params![project_id.to_string()], |row| {
+            screenshot_from_row(row, &app_data_dir)
+        })
         .map_err(command_error)?
         .collect::<Result<Vec<_>, _>>()
         .map_err(command_error)?;
@@ -154,6 +174,7 @@ fn list_screenshots_blocking(
 
 fn update_screenshot_metadata_blocking(
     db_path: PathBuf,
+    app_data_dir: PathBuf,
     project_id: Uuid,
     screenshot_id: Uuid,
     page_name: String,
@@ -179,11 +200,12 @@ fn update_screenshot_metadata_blocking(
         return Err("screenshot was not found".to_owned());
     }
 
-    get_screenshot(&connection, project_id, screenshot_id)
+    get_screenshot(&connection, &app_data_dir, project_id, screenshot_id)
 }
 
 fn get_screenshot(
     connection: &rusqlite::Connection,
+    app_data_dir: &Path,
     project_id: Uuid,
     screenshot_id: Uuid,
 ) -> CommandResult<ScreenshotView> {
@@ -193,16 +215,22 @@ fn get_screenshot(
              FROM screenshots
              WHERE project_id = ?1 AND id = ?2",
             params![project_id.to_string(), screenshot_id.to_string()],
-            screenshot_from_row,
+            |row| screenshot_from_row(row, app_data_dir),
         )
         .map_err(command_error)
 }
 
-fn screenshot_from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<ScreenshotView> {
+fn screenshot_from_row(
+    row: &rusqlite::Row<'_>,
+    app_data_dir: &Path,
+) -> rusqlite::Result<ScreenshotView> {
+    let project_id: String = row.get("project_id")?;
+    let relative_path: String = row.get("relative_path")?;
     Ok(ScreenshotView {
         id: row.get("id")?,
-        project_id: row.get("project_id")?,
-        relative_path: row.get("relative_path")?,
+        absolute_path: absolute_screenshot_path(app_data_dir, &project_id, &relative_path),
+        project_id,
+        relative_path,
         sha256: row.get("sha256")?,
         media_type: row.get("media_type")?,
         width: row.get("width")?,
@@ -220,20 +248,24 @@ fn parse_datetime(value: String) -> rusqlite::Result<DateTime<Utc>> {
         .map_err(|error| rusqlite::Error::InvalidParameterName(error.to_string()))
 }
 
-impl From<Screenshot> for ScreenshotView {
-    fn from(screenshot: Screenshot) -> Self {
-        Self {
-            id: screenshot.id.to_string(),
-            project_id: screenshot.project_id.to_string(),
-            relative_path: screenshot.relative_path,
-            sha256: screenshot.sha256,
-            media_type: screenshot.media_type,
-            width: screenshot.width,
-            height: screenshot.height,
-            page_name: screenshot.page_name,
-            scene: screenshot.scene,
-            sort_order: screenshot.sort_order,
-            created_at: screenshot.created_at,
-        }
+fn screenshot_view(screenshot: Screenshot, app_data_dir: &Path) -> ScreenshotView {
+    let project_id = screenshot.project_id.to_string();
+    ScreenshotView {
+        id: screenshot.id.to_string(),
+        absolute_path: absolute_screenshot_path(
+            app_data_dir,
+            &project_id,
+            &screenshot.relative_path,
+        ),
+        project_id,
+        relative_path: screenshot.relative_path,
+        sha256: screenshot.sha256,
+        media_type: screenshot.media_type,
+        width: screenshot.width,
+        height: screenshot.height,
+        page_name: screenshot.page_name,
+        scene: screenshot.scene,
+        sort_order: screenshot.sort_order,
+        created_at: screenshot.created_at,
     }
 }

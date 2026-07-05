@@ -10,6 +10,8 @@ vi.mock("../../lib/desktop", () => ({
   desktop: {
     getDesignSpec: vi.fn(),
     updateRule: vi.fn(),
+    listScreenshots: vi.fn(),
+    screenshotUrl: vi.fn(),
   },
 }));
 
@@ -23,6 +25,8 @@ describe("WorkbenchPage", () => {
     window.history.pushState({}, "", "/projects/project-1/workbench");
     currentSpec = specFixture();
     mockedDesktop.getDesignSpec.mockImplementation(async () => currentSpec);
+    mockedDesktop.listScreenshots.mockResolvedValue([]);
+    mockedDesktop.screenshotUrl.mockReturnValue("asset://localhost/shot-1.png");
     mockedDesktop.updateRule.mockImplementation(async ({ ruleId, statement, status }) => {
       currentSpec = replaceRule(currentSpec, ruleId, (rule) => ({
         ...rule,

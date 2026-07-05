@@ -227,6 +227,7 @@ export function ScreenshotManagerPage() {
         <table>
           <thead>
             <tr>
+              <th>Preview</th>
               <th>Page</th>
               <th>Scene</th>
               <th>Dimensions</th>
@@ -237,6 +238,14 @@ export function ScreenshotManagerPage() {
           <tbody>
             {sortedScreenshots.map((screenshot) => (
               <tr key={screenshot.id}>
+                <td>
+                  <img
+                    src={desktop.screenshotUrl(screenshot)}
+                    alt={`Screenshot preview for ${screenshot.page_name}`}
+                    width={96}
+                    style={{ display: "block", maxHeight: 64, objectFit: "cover" }}
+                  />
+                </td>
                 <td>
                   <label>
                     Page name for {screenshot.page_name}

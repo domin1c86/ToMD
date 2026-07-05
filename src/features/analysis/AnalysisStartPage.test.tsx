@@ -156,6 +156,7 @@ function screenshot(overrides: Partial<Screenshot> = {}): Screenshot {
     id: "shot-1",
     project_id: "project-1",
     relative_path: "screenshots/shot-1.png",
+    absolute_path: "C:/app-data/projects/project-1/screenshots/shot-1.png",
     sha256: "hash",
     media_type: "image/png",
     width: 1200,
