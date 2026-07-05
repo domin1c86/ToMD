@@ -4,6 +4,10 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useI18n } from "../../app/i18n";
 import { desktop } from "../../lib/desktop";
 import type { Provider, ProviderCapabilities, ProviderKind } from "../../lib/desktop";
+import {
+  clearProviderVerification,
+  markProviderVerified,
+} from "../../lib/providerVerification";
 
 const defaultBaseUrls: Record<ProviderKind, string> = {
   open_ai: "https://api.openai.com/v1",
@@ -69,6 +73,7 @@ export function ProviderSettingsPage() {
       });
       setApiKey("");
       setProviders((current) => [saved, ...current.filter((provider) => provider.id !== saved.id)]);
+      clearProviderVerification(saved.id);
       invalidateConnectionTest();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
@@ -81,9 +86,15 @@ export function ProviderSettingsPage() {
       const nextCapabilities = await desktop.testProvider({ providerId: provider.id });
       setTestedProviderId(provider.id);
       setCapabilities(nextCapabilities);
+      if (nextCapabilities.image_input) {
+        markProviderVerified(provider.id);
+      } else {
+        clearProviderVerification(provider.id);
+      }
     } catch (caught) {
       setTestedProviderId(null);
       setCapabilities(null);
+      clearProviderVerification(provider.id);
       setError(caught instanceof Error ? caught.message : String(caught));
     }
   };

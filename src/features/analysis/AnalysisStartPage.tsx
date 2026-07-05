@@ -4,6 +4,16 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useI18n } from "../../app/i18n";
 import { desktop } from "../../lib/desktop";
 import type { AnalysisPreview, Provider, Screenshot } from "../../lib/desktop";
+import { isProviderVerified, lastVerifiedProviderId } from "../../lib/providerVerification";
+
+function initialProviderId(providers: Provider[]): string | null {
+  const last = lastVerifiedProviderId();
+  if (last && providers.some((provider) => provider.id === last)) {
+    return last;
+  }
+  const verified = providers.find((provider) => isProviderVerified(provider.id));
+  return verified?.id ?? providers[0]?.id ?? null;
+}
 
 export function AnalysisStartPage() {
   const { projectId = "" } = useParams();
@@ -12,12 +22,14 @@ export function AnalysisStartPage() {
   const isEnglish = locale === "en-US";
   const [providers, setProviders] = useState<Provider[]>([]);
   const [screenshots, setScreenshots] = useState<Screenshot[]>([]);
+  const [selectedProviderId, setSelectedProviderId] = useState<string | null>(null);
   const [preview, setPreview] = useState<AnalysisPreview | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
 
-  const selectedProvider = providers[0] ?? null;
+  const selectedProvider = providers.find((provider) => provider.id === selectedProviderId) ?? null;
+  const providerVerified = selectedProvider !== null && isProviderVerified(selectedProvider.id);
   const selectedScreenshotIds = useMemo(
     () => screenshots.map((screenshot) => screenshot.id),
     [screenshots],
@@ -26,7 +38,7 @@ export function AnalysisStartPage() {
   useEffect(() => {
     let cancelled = false;
 
-    async function loadPreview() {
+    async function load() {
       setLoading(true);
       setError(null);
       try {
@@ -40,21 +52,7 @@ export function AnalysisStartPage() {
 
         setProviders(loadedProviders);
         setScreenshots(loadedScreenshots);
-        const provider = loadedProviders[0];
-        const screenshotIds = loadedScreenshots.map((screenshot) => screenshot.id);
-        if (!provider || screenshotIds.length === 0) {
-          setPreview(null);
-          return;
-        }
-
-        const nextPreview = await desktop.previewAnalysisRequest({
-          projectId,
-          providerId: provider.id,
-          screenshotIds,
-        });
-        if (!cancelled) {
-          setPreview(nextPreview);
-        }
+        setSelectedProviderId(initialProviderId(loadedProviders));
       } catch (caught) {
         if (!cancelled) {
           setError(caught instanceof Error ? caught.message : String(caught));
@@ -66,15 +64,48 @@ export function AnalysisStartPage() {
       }
     }
 
-    void loadPreview();
+    void load();
 
     return () => {
       cancelled = true;
     };
   }, [projectId]);
 
+  useEffect(() => {
+    if (!selectedProviderId || selectedScreenshotIds.length === 0) {
+      setPreview(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadPreview() {
+      try {
+        const nextPreview = await desktop.previewAnalysisRequest({
+          projectId,
+          providerId: selectedProviderId as string,
+          screenshotIds: selectedScreenshotIds,
+        });
+        if (!cancelled) {
+          setPreview(nextPreview);
+        }
+      } catch (caught) {
+        if (!cancelled) {
+          setPreview(null);
+          setError(caught instanceof Error ? caught.message : String(caught));
+        }
+      }
+    }
+
+    void loadPreview();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId, selectedProviderId, selectedScreenshotIds]);
+
   const sendAnalysis = async () => {
-    if (!selectedProvider || selectedScreenshotIds.length === 0) {
+    if (!selectedProvider || !providerVerified || selectedScreenshotIds.length === 0) {
       return;
     }
 
@@ -115,6 +146,31 @@ export function AnalysisStartPage() {
         <p>No screenshots selected for analysis.</p>
       ) : null}
 
+      {providers.length > 0 ? (
+        <label className="field">
+          {isEnglish ? "Analysis provider" : "分析使用的 Provider"}
+          <select
+            aria-label="Analysis provider"
+            value={selectedProviderId ?? ""}
+            onChange={(event) => setSelectedProviderId(event.target.value)}
+          >
+            {providers.map((provider) => (
+              <option key={provider.id} value={provider.id}>
+                {provider.name} ({provider.model})
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
+
+      {selectedProvider && !providerVerified ? (
+        <p role="alert">
+          {isEnglish
+            ? "This provider has not passed a connection test. Test it on the provider settings page first."
+            : "该 Provider 尚未通过连接测试。请先在模型配置页测试连接。"}
+        </p>
+      ) : null}
+
       {preview ? (
         <section className="card" aria-label="What leaves this device">
           <h3>{isEnglish ? "What will be sent" : "会发送什么"}</h3>
@@ -131,7 +187,7 @@ export function AnalysisStartPage() {
         className="button-primary"
         type="button"
         aria-label="Send and analyze"
-        disabled={!preview || analyzing}
+        disabled={!preview || analyzing || !providerVerified}
         onClick={() => void sendAnalysis()}
       >
         {isEnglish ? "Send and analyze" : "发送并分析"}

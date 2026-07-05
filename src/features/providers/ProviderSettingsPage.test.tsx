@@ -18,6 +18,7 @@ const mockedDesktop = vi.mocked(desktop);
 describe("ProviderSettingsPage", () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    localStorage.clear();
     window.history.pushState({}, "", "/projects/project-1/providers");
     mockedDesktop.listProviders.mockResolvedValue([]);
     mockedDesktop.saveProvider.mockResolvedValue(provider());
@@ -93,6 +94,21 @@ describe("ProviderSettingsPage", () => {
     expect(mockedDesktop.testProvider).toHaveBeenCalledWith({ providerId: "provider-1" });
     expect(await screen.findByText("This model does not report image input support.")).toBeVisible();
     expect(screen.getByRole("button", { name: "Continue to disclosure" })).toBeDisabled();
+    expect(localStorage.getItem("dle.verifiedProviderIds") ?? "[]").not.toContain("provider-1");
+  });
+
+  it("records the verified provider after a passing connection test", async () => {
+    const user = userEvent.setup();
+    mockedDesktop.listProviders.mockResolvedValue([provider()]);
+
+    render(<App />);
+
+    await user.click(await screen.findByRole("button", { name: "Test connection for My endpoint" }));
+
+    expect(await screen.findByText("Connection test passed with image input support.")).toBeVisible();
+    expect(localStorage.getItem("dle.verifiedProviderIds")).toContain("provider-1");
+    expect(localStorage.getItem("dle.lastVerifiedProviderId")).toBe("provider-1");
+    expect(screen.getByRole("button", { name: "Continue to disclosure" })).toBeEnabled();
   });
 
   it("shows invalid key errors without exposing the secret", async () => {
