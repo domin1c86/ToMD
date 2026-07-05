@@ -1,4 +1,7 @@
-use std::{fs, path::PathBuf};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
 use chrono::{DateTime, Utc};
 use design_core::{compile_markdown, DesignSpec, Rule, RuleStatus};
@@ -23,6 +26,14 @@ pub struct ProjectIdInput {
 #[serde(rename_all = "camelCase")]
 pub struct ExportDesignMarkdownInput {
     project_id: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct ExportIdInput {
+    project_id: String,
+    export_id: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -59,6 +70,110 @@ pub async fn export_design_markdown(
     })
     .await
     .map_err(command_error)?
+}
+
+#[tauri::command]
+pub async fn read_export_markdown(
+    state: State<'_, AppState>,
+    input: ExportIdInput,
+) -> CommandResult<String> {
+    let project_id = parse_uuid(&input.project_id, "projectId")?;
+    let export_id = parse_uuid(&input.export_id, "exportId")?;
+    let db_path = state.db_path.clone();
+    let app_data_dir = state.app_data_dir.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let path = export_absolute_path(&db_path, &app_data_dir, project_id, export_id)?;
+        fs::read_to_string(path).map_err(command_error)
+    })
+    .await
+    .map_err(command_error)?
+}
+
+#[tauri::command]
+pub async fn reveal_export(
+    state: State<'_, AppState>,
+    input: ExportIdInput,
+) -> CommandResult<()> {
+    let project_id = parse_uuid(&input.project_id, "projectId")?;
+    let export_id = parse_uuid(&input.export_id, "exportId")?;
+    let db_path = state.db_path.clone();
+    let app_data_dir = state.app_data_dir.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let path = export_absolute_path(&db_path, &app_data_dir, project_id, export_id)?;
+        reveal_in_file_manager(&path)
+    })
+    .await
+    .map_err(command_error)?
+}
+
+fn export_absolute_path(
+    db_path: &Path,
+    app_data_dir: &Path,
+    project_id: Uuid,
+    export_id: Uuid,
+) -> CommandResult<PathBuf> {
+    let connection = open_connection(db_path).map_err(command_error)?;
+    let relative_path: String = connection
+        .query_row(
+            "SELECT relative_path FROM export_versions
+             WHERE project_id = ?1 AND id = ?2",
+            params![project_id.to_string(), export_id.to_string()],
+            |row| row.get(0),
+        )
+        .map_err(command_error)?;
+    let project_dir = app_data_dir.join("projects").join(project_id.to_string());
+    safe_export_path(&project_dir, &relative_path)
+}
+
+/// Only `exports/<file>` paths recorded by the exporter are resolvable;
+/// anything else (traversal, nesting, absolute paths) is rejected.
+fn safe_export_path(project_dir: &Path, relative_path: &str) -> CommandResult<PathBuf> {
+    let mut components = relative_path.split('/');
+    match (components.next(), components.next(), components.next()) {
+        (Some("exports"), Some(file), None)
+            if !file.is_empty() && !file.contains("..") && !file.contains('\\') =>
+        {
+            Ok(project_dir.join("exports").join(file))
+        }
+        _ => Err("export path is invalid".to_owned()),
+    }
+}
+
+fn reveal_in_file_manager(path: &Path) -> CommandResult<()> {
+    if !path.is_file() {
+        return Err("exported file no longer exists".to_owned());
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new("explorer")
+            .arg(format!("/select,{}", path.display()))
+            .spawn()
+            .map_err(command_error)?;
+        Ok(())
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .arg("-R")
+            .arg(path)
+            .spawn()
+            .map_err(command_error)?;
+        Ok(())
+    }
+
+    #[cfg(all(unix, not(target_os = "macos")))]
+    {
+        let parent = path
+            .parent()
+            .ok_or_else(|| "exported file has no parent directory".to_owned())?;
+        std::process::Command::new("xdg-open")
+            .arg(parent)
+            .spawn()
+            .map_err(command_error)?;
+        Ok(())
+    }
 }
 
 fn list_exports_blocking(
@@ -387,6 +502,44 @@ mod tests {
         assert_ne!(first.spec_version_id, second.spec_version_id);
         assert_eq!(count_rows(&connection, "export_versions"), 2);
         assert_eq!(count_rows(&connection, "design_spec_versions"), 3);
+    }
+
+    #[test]
+    fn read_export_markdown_returns_exported_file_contents() {
+        let temp = tempfile::tempdir().unwrap();
+        let db_path = temp.path().join("design-storage.sqlite3");
+        let connection = design_storage::open_connection(&db_path).unwrap();
+        create_schema(&connection);
+        let project_id = Uuid::new_v4();
+        let provider_id = Uuid::new_v4();
+        let spec = exportable_spec(project_id, provider_id);
+        insert_project_with_draft(&connection, project_id, provider_id, &spec);
+        let export =
+            export_design_markdown_blocking(db_path.clone(), temp.path().to_path_buf(), project_id)
+                .unwrap();
+
+        let path = export_absolute_path(
+            &db_path,
+            temp.path(),
+            project_id,
+            Uuid::parse_str(&export.id).unwrap(),
+        )
+        .unwrap();
+        let contents = fs::read_to_string(path).unwrap();
+
+        assert!(contents.contains("Accepted exported rule."));
+    }
+
+    #[test]
+    fn safe_export_path_rejects_traversal_and_nested_paths() {
+        let project_dir = Path::new("/data/projects/p1");
+
+        assert!(safe_export_path(project_dir, "exports/20260701-DESIGN.md").is_ok());
+        assert!(safe_export_path(project_dir, "exports/../secret.md").is_err());
+        assert!(safe_export_path(project_dir, "exports/nested/file.md").is_err());
+        assert!(safe_export_path(project_dir, "other/file.md").is_err());
+        assert!(safe_export_path(project_dir, "exports/").is_err());
+        assert!(safe_export_path(project_dir, "exports/..\\secret.md").is_err());
     }
 
     fn create_schema(connection: &Connection) {

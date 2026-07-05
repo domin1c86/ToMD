@@ -130,6 +130,10 @@ export type UpdateRuleInput = ProjectIdInput & {
 
 export type ExportDesignMarkdownInput = ProjectIdInput;
 
+export type ExportIdInput = ProjectIdInput & {
+  exportId: string;
+};
+
 const command = <Output, Input = undefined>(
   name: string,
   input?: Input,
@@ -194,4 +198,8 @@ export const desktop = {
       "export_design_markdown",
       input,
     ),
+  readExportMarkdown: (input: ExportIdInput) =>
+    command<string, ExportIdInput>("read_export_markdown", input),
+  revealExport: (input: ExportIdInput) =>
+    command<void, ExportIdInput>("reveal_export", input),
 };

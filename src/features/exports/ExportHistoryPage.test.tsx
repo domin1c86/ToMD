@@ -11,25 +11,21 @@ vi.mock("../../lib/desktop", () => ({
     getDesignSpec: vi.fn(),
     listExports: vi.fn(),
     exportDesignMarkdown: vi.fn(),
+    readExportMarkdown: vi.fn(),
+    revealExport: vi.fn(),
   },
 }));
 
 const mockedDesktop = vi.mocked(desktop);
-let writeClipboardText: ReturnType<typeof vi.fn>;
 
 describe("ExportHistoryPage", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     window.history.pushState({}, "", "/projects/project-1/exports");
-    writeClipboardText = vi.fn().mockResolvedValue(undefined);
-    Object.defineProperty(navigator, "clipboard", {
-      configurable: true,
-      value: {
-        writeText: writeClipboardText,
-      },
-    });
     mockedDesktop.getDesignSpec.mockResolvedValue(specFixture());
     mockedDesktop.listExports.mockResolvedValue([exportVersion()]);
+    mockedDesktop.readExportMarkdown.mockResolvedValue("# Design intent\n\n- Use 12px card radii");
+    mockedDesktop.revealExport.mockResolvedValue(undefined);
     mockedDesktop.exportDesignMarkdown.mockResolvedValue(
       exportVersion({
         id: "export-2",
@@ -78,15 +74,39 @@ describe("ExportHistoryPage", () => {
     expect(await screen.findByText("Source spec version: version-2")).toBeVisible();
   });
 
-  it("copies and reveals an exported file path", async () => {
+  it("copies exported markdown content and reveals the file in the folder", async () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(await screen.findByRole("button", { name: "Copy path for export-1" }));
-    expect(await screen.findByText("Copied path: exports/20260701T101500.000000000Z-DESIGN.md")).toBeVisible();
+    await user.click(await screen.findByRole("button", { name: "Copy content for export-1" }));
+    expect(mockedDesktop.readExportMarkdown).toHaveBeenCalledWith({
+      projectId: "project-1",
+      exportId: "export-1",
+    });
+    expect(await screen.findByText("Copied DESIGN.md content for export-1")).toBeVisible();
+    await expect(navigator.clipboard.readText()).resolves.toBe(
+      "# Design intent\n\n- Use 12px card radii",
+    );
 
     await user.click(screen.getByRole("button", { name: "Reveal in folder for export-1" }));
-    expect(screen.getByText("Reveal in folder: exports/20260701T101500.000000000Z-DESIGN.md")).toBeVisible();
+    expect(mockedDesktop.revealExport).toHaveBeenCalledWith({
+      projectId: "project-1",
+      exportId: "export-1",
+    });
+    expect(
+      await screen.findByText("Reveal in folder: exports/20260701T101500.000000000Z-DESIGN.md"),
+    ).toBeVisible();
+  });
+
+  it("shows an error when copying export content fails", async () => {
+    const user = userEvent.setup();
+    mockedDesktop.readExportMarkdown.mockRejectedValue(new Error("file missing"));
+    render(<App />);
+
+    await user.click(await screen.findByRole("button", { name: "Copy content for export-1" }));
+
+    expect(await screen.findByText("file missing")).toBeVisible();
+    expect(screen.queryByText(/Copied DESIGN.md content/)).not.toBeInTheDocument();
   });
 });
 

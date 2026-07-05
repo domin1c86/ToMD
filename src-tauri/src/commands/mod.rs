@@ -28,6 +28,8 @@ pub fn handler() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Send + Syn
         rules::update_rule,
         exports::list_exports,
         exports::export_design_markdown,
+        exports::read_export_markdown,
+        exports::reveal_export,
     ]
 }
 

@@ -14,7 +14,7 @@ export function ExportHistoryPage() {
   const [exports, setExports] = useState<ExportVersion[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [revealedPath, setRevealedPath] = useState<string | null>(null);
-  const [copiedPath, setCopiedPath] = useState<string | null>(null);
+  const [copiedExportId, setCopiedExportId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
 
@@ -52,9 +52,30 @@ export function ExportHistoryPage() {
     }
   };
 
-  const copyPath = async (relativePath: string) => {
-    await navigator.clipboard.writeText(relativePath);
-    setCopiedPath(relativePath);
+  const copyContent = async (exportVersion: ExportVersion) => {
+    setError(null);
+    setCopiedExportId(null);
+    try {
+      const content = await desktop.readExportMarkdown({
+        projectId,
+        exportId: exportVersion.id,
+      });
+      await navigator.clipboard.writeText(content);
+      setCopiedExportId(exportVersion.id);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    }
+  };
+
+  const revealExport = async (exportVersion: ExportVersion) => {
+    setError(null);
+    setRevealedPath(null);
+    try {
+      await desktop.revealExport({ projectId, exportId: exportVersion.id });
+      setRevealedPath(exportVersion.relative_path);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    }
   };
 
   return (
@@ -88,7 +109,7 @@ export function ExportHistoryPage() {
       </section>
 
       {revealedPath ? <p>Reveal in folder: {revealedPath}</p> : null}
-      {copiedPath ? <p>Copied path: {copiedPath}</p> : null}
+      {copiedExportId ? <p>Copied DESIGN.md content for {copiedExportId}</p> : null}
 
       <ul aria-label="Export history">
         {exports.map((exportVersion) => (
@@ -99,14 +120,14 @@ export function ExportHistoryPage() {
             <button
               className="button-secondary"
               type="button"
-              onClick={() => void copyPath(exportVersion.relative_path)}
+              onClick={() => void copyContent(exportVersion)}
             >
-              Copy path for {exportVersion.id}
+              Copy content for {exportVersion.id}
             </button>
             <button
               className="button-secondary"
               type="button"
-              onClick={() => setRevealedPath(exportVersion.relative_path)}
+              onClick={() => void revealExport(exportVersion)}
             >
               Reveal in folder for {exportVersion.id}
             </button>
