@@ -19,7 +19,10 @@ export function MarkdownPreview({ spec }: MarkdownPreviewProps) {
 function compilePreviewMarkdown(spec: DesignSpec): string {
   const sections = getRuleGroups(spec)
     .map((group) => {
-      const visibleRules = group.rules.filter((rule) => rule.status !== "rejected");
+      // Match the backend exporter: only accepted or edited rules reach DESIGN.md.
+      const visibleRules = group.rules.filter(
+        (rule) => rule.status === "accepted" || rule.status === "edited",
+      );
       if (visibleRules.length === 0) {
         return "";
       }

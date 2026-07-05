@@ -54,6 +54,7 @@ describe("WorkbenchPage", () => {
     render(<App />);
 
     await user.click(await screen.findByRole("button", { name: "Use 12px card radii" }));
+    expect(screen.getByTestId("markdown-preview")).not.toHaveTextContent("Use 12px card radii");
     await user.click(screen.getByRole("button", { name: "Accept rule" }));
 
     expect(mockedDesktop.updateRule).toHaveBeenCalledWith({
