@@ -226,7 +226,8 @@ pub(crate) async fn raw_response(response: Response) -> Result<RawModelResponse,
     let request_id = request_id(response.headers());
 
     if !status.is_success() {
-        return Err(ProviderError::from_status(status));
+        let body = response.text().await.unwrap_or_default();
+        return Err(ProviderError::from_status_and_body(status, &body));
     }
 
     let body = response.text().await.map_err(ProviderError::from_reqwest)?;
@@ -252,7 +253,8 @@ pub(crate) async fn parse_capabilities(
 ) -> Result<ProviderCapabilities, ProviderError> {
     let status = response.status();
     if !status.is_success() {
-        return Err(ProviderError::from_status(status));
+        let body = response.text().await.unwrap_or_default();
+        return Err(ProviderError::from_status_and_body(status, &body));
     }
 
     let body: Value = response

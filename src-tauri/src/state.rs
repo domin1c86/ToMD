@@ -1,7 +1,12 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, time::Duration};
 
 use design_providers::KeyringCredentialStore;
 use design_storage::Storage;
+
+/// Upper bound for a full analysis round-trip; large multi-image requests
+/// against slow providers can legitimately take minutes.
+const HTTP_REQUEST_TIMEOUT: Duration = Duration::from_secs(300);
+const HTTP_CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
 
 #[derive(Clone)]
 pub struct AppState {
@@ -21,7 +26,11 @@ impl AppState {
             storage,
             app_data_dir,
             db_path,
-            http_client: reqwest::Client::new(),
+            http_client: reqwest::Client::builder()
+                .connect_timeout(HTTP_CONNECT_TIMEOUT)
+                .timeout(HTTP_REQUEST_TIMEOUT)
+                .build()
+                .expect("failed to build HTTP client"),
             credential_store: KeyringCredentialStore,
         })
     }

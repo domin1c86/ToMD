@@ -1,4 +1,4 @@
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use async_trait::async_trait;
 use serde_json::json;
@@ -11,6 +11,10 @@ use crate::{
     },
     ProviderConfig, ProviderError,
 };
+
+/// Connection tests should fail fast instead of inheriting the long
+/// analysis timeout from the shared HTTP client.
+const TEST_CONNECTION_TIMEOUT: Duration = Duration::from_secs(30);
 
 pub struct OpenAiCompatibleProvider {
     config: ProviderConfig,
@@ -56,6 +60,7 @@ impl MultimodalProvider for OpenAiCompatibleProvider {
         let response = self
             .client
             .get(url)
+            .timeout(TEST_CONNECTION_TIMEOUT)
             .bearer_auth(self.secret.expose_secret())
             .send()
             .await

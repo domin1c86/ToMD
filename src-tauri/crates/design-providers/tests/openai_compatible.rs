@@ -98,6 +98,7 @@ async fn sends_chat_completions_shape_with_data_url_and_strict_json_schema() {
 async fn maps_authentication_and_rate_limit_statuses() {
     for (status, expected) in [
         (401, ProviderError::Authentication),
+        (403, ProviderError::Authentication),
         (429, ProviderError::RateLimited),
     ] {
         let server = MockServer::spawn(vec![MockResponse::json(status, r#"{"error":"nope"}"#)]);
@@ -112,6 +113,44 @@ async fn maps_authentication_and_rate_limit_statuses() {
 
         assert_eq!(error, expected);
     }
+}
+
+#[tokio::test]
+async fn surfaces_error_body_message_for_http_failures() {
+    let server = MockServer::spawn(vec![MockResponse::json(
+        400,
+        r#"{"error":{"message":"Invalid schema for response_format","type":"invalid_request_error"}}"#,
+    )]);
+    let provider = build_provider(
+        &config(&server.base_url),
+        SecretString::new("sk-secret"),
+        reqwest::Client::new(),
+    )
+    .unwrap();
+
+    let error = provider.analyze(request()).await.unwrap_err();
+
+    assert!(matches!(error, ProviderError::Http { status: 400, .. }));
+    let rendered = format!("{error}");
+    assert!(rendered.contains("400"));
+    assert!(rendered.contains("Invalid schema for response_format"));
+    assert!(!rendered.contains("invalid_request_error"));
+}
+
+#[tokio::test]
+async fn http_failure_with_unparseable_body_stays_generic() {
+    let server = MockServer::spawn(vec![MockResponse::json(500, "<html>sk-leak</html>")]);
+    let provider = build_provider(
+        &config(&server.base_url),
+        SecretString::new("sk-secret"),
+        reqwest::Client::new(),
+    )
+    .unwrap();
+
+    let error = provider.analyze(request()).await.unwrap_err();
+
+    assert!(matches!(error, ProviderError::Http { status: 500, detail: None }));
+    assert!(!format!("{error}").contains("sk-leak"));
 }
 
 #[tokio::test]

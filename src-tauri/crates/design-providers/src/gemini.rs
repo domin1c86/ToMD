@@ -1,4 +1,4 @@
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use async_trait::async_trait;
 use serde_json::json;
@@ -11,6 +11,10 @@ use crate::{
     },
     ProviderConfig, ProviderError,
 };
+
+/// Connection tests should fail fast instead of inheriting the long
+/// analysis timeout from the shared HTTP client.
+const TEST_CONNECTION_TIMEOUT: Duration = Duration::from_secs(30);
 
 pub struct GeminiProvider {
     config: ProviderConfig,
@@ -56,6 +60,7 @@ impl MultimodalProvider for GeminiProvider {
         let response = self
             .client
             .get(url)
+            .timeout(TEST_CONNECTION_TIMEOUT)
             .header("x-goog-api-key", self.secret.expose_secret())
             .send()
             .await
