@@ -3,6 +3,7 @@ mod client;
 pub mod config;
 pub mod credentials;
 mod error;
+mod extract;
 mod gemini;
 mod openai;
 mod openai_compatible;

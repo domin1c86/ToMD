@@ -115,6 +115,7 @@ impl MultimodalProvider for OpenAiProvider {
             request_id: raw.request_id.clone(),
         };
 
-        Ok(raw)
+        let text = crate::extract::openai_responses_text(&raw.body)?;
+        Ok(RawModelResponse { body: text, ..raw })
     }
 }

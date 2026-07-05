@@ -114,6 +114,7 @@ impl MultimodalProvider for GeminiProvider {
             request_id: raw.request_id.clone(),
         };
 
-        Ok(raw)
+        let text = crate::extract::gemini_candidates_text(&raw.body)?;
+        Ok(RawModelResponse { body: text, ..raw })
     }
 }

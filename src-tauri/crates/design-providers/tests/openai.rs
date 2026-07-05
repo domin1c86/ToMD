@@ -21,7 +21,10 @@ fn config(base_url: &str) -> ProviderConfig {
 
 #[tokio::test]
 async fn openai_preset_uses_responses_api_with_input_images_and_strict_schema() {
-    let server = MockServer::spawn(vec![MockResponse::json(200, r#"{"output_text":"{}"}"#)]);
+    let server = MockServer::spawn(vec![MockResponse::json(
+        200,
+        r#"{"id":"resp_1","output":[{"type":"message","role":"assistant","content":[{"type":"output_text","text":"{\"spacing\":[]}"}]}],"usage":{"input_tokens":10}}"#,
+    )]);
     let provider = build_provider(
         &config(&server.base_url),
         SecretString::new("sk-openai"),
@@ -29,7 +32,7 @@ async fn openai_preset_uses_responses_api_with_input_images_and_strict_schema() 
     )
     .unwrap();
 
-    provider
+    let response = provider
         .analyze(AnalysisRequest {
             model: "gpt-vision".to_owned(),
             prompt: "analysis prompt".to_owned(),
@@ -47,6 +50,8 @@ async fn openai_preset_uses_responses_api_with_input_images_and_strict_schema() 
         })
         .await
         .unwrap();
+
+    assert_eq!(response.body, r#"{"spacing":[]}"#);
 
     let captured = server.single_request();
     assert_eq!(captured.path, "/responses");

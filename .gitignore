@@ -20,3 +20,6 @@ pnpm-debug.log*
 Thumbs.db
 .idea/
 .vscode/
+
+AGENTS.md
+CLAUDE.md

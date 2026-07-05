@@ -63,7 +63,7 @@ async fn sends_chat_completions_shape_with_data_url_and_strict_json_schema() {
     );
     assert_eq!(response.request_id.as_deref(), Some("req-compatible"));
     assert_eq!(response.status_code, 200);
-    assert!(response.body.contains("choices"));
+    assert_eq!(response.body, r#"{"colors":[]}"#);
 
     let body: Value = serde_json::from_str(&captured.body).unwrap();
     assert_eq!(body["model"], "vision-model");

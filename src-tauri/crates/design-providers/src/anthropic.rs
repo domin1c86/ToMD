@@ -133,6 +133,7 @@ impl MultimodalProvider for AnthropicProvider {
             request_id: raw.request_id.clone(),
         };
 
-        Ok(raw)
+        let text = crate::extract::anthropic_messages_text(&raw.body)?;
+        Ok(RawModelResponse { body: text, ..raw })
     }
 }

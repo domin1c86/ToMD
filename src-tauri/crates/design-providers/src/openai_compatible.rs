@@ -117,6 +117,7 @@ impl MultimodalProvider for OpenAiCompatibleProvider {
             request_id: raw.request_id.clone(),
         };
 
-        Ok(raw)
+        let text = crate::extract::chat_completions_text(&raw.body)?;
+        Ok(RawModelResponse { body: text, ..raw })
     }
 }

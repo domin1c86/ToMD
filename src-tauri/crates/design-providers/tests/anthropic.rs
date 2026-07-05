@@ -29,7 +29,7 @@ async fn anthropic_preset_sends_base64_image_blocks_followed_by_text_without_sch
 ) {
     let server = MockServer::spawn(vec![MockResponse::json(
         200,
-        r#"{"content":[{"type":"text","text":"{}"}]}"#,
+        r#"{"id":"msg_1","content":[{"type":"text","text":"{\"tokens\":[]}"}],"stop_reason":"end_turn"}"#,
     )]);
     let provider = AnthropicProvider::new(
         config(&server.base_url),
@@ -41,7 +41,7 @@ async fn anthropic_preset_sends_base64_image_blocks_followed_by_text_without_sch
         structured_output: false,
     });
 
-    provider
+    let response = provider
         .analyze(AnalysisRequest {
             model: "claude-vision".to_owned(),
             prompt: "analysis prompt".to_owned(),
@@ -53,6 +53,8 @@ async fn anthropic_preset_sends_base64_image_blocks_followed_by_text_without_sch
         })
         .await
         .unwrap();
+
+    assert_eq!(response.body, r#"{"tokens":[]}"#);
 
     let captured = server.single_request();
     assert_eq!(captured.path, "/messages");

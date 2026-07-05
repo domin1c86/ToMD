@@ -23,7 +23,7 @@ fn config(base_url: &str) -> ProviderConfig {
 async fn gemini_preset_uses_generate_content_with_inline_data_and_response_schema() {
     let server = MockServer::spawn(vec![MockResponse::json(
         200,
-        r#"{"candidates":[{"content":{"parts":[{"text":"{}"}]}}]}"#,
+        r#"{"candidates":[{"content":{"parts":[{"text":"{\"typography\":[]}"}],"role":"model"},"finishReason":"STOP"}]}"#,
     )]);
     let provider = build_provider(
         &config(&server.base_url),
@@ -32,7 +32,7 @@ async fn gemini_preset_uses_generate_content_with_inline_data_and_response_schem
     )
     .unwrap();
 
-    provider
+    let response = provider
         .analyze(AnalysisRequest {
             model: "gemini-vision".to_owned(),
             prompt: "analysis prompt".to_owned(),
@@ -44,6 +44,8 @@ async fn gemini_preset_uses_generate_content_with_inline_data_and_response_schem
         })
         .await
         .unwrap();
+
+    assert_eq!(response.body, r#"{"typography":[]}"#);
 
     let captured = server.single_request();
     assert_eq!(captured.path, "/models/gemini-vision:generateContent");
