@@ -138,12 +138,14 @@ export function AnalysisStartPage() {
           </p>
         </div>
       </div>
-      {loading ? <p>Preparing disclosure…</p> : null}
+      {loading ? <p>{isEnglish ? "Preparing disclosure…" : "正在准备发送披露…"}</p> : null}
       {error ? <p role="alert">{error}</p> : null}
 
-      {!loading && !selectedProvider ? <p>No provider configured.</p> : null}
+      {!loading && !selectedProvider ? (
+        <p>{isEnglish ? "No provider configured." : "尚未配置 Provider。"}</p>
+      ) : null}
       {!loading && selectedProvider && selectedScreenshotIds.length === 0 ? (
-        <p>No screenshots selected for analysis.</p>
+        <p>{isEnglish ? "No screenshots selected for analysis." : "没有可用于分析的截图。"}</p>
       ) : null}
 
       {providers.length > 0 ? (
@@ -179,7 +181,11 @@ export function AnalysisStartPage() {
           <p>{preview.image_count} images will be sent</p>
           <p>Selected image IDs: {preview.image_ids.join(", ")}</p>
           <p>Estimated encoded payload: {preview.estimated_encoded_bytes} bytes</p>
-          <p>Only the selected screenshots and analysis prompt are sent to the configured provider.</p>
+          <p>
+            {isEnglish
+              ? "Only the listed screenshots and the analysis prompt are sent to the configured provider."
+              : "只会把上面列出的截图和分析提示词发送给所配置的 Provider。"}
+          </p>
         </section>
       ) : null}
 

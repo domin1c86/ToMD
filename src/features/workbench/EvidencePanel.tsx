@@ -1,3 +1,4 @@
+import { useI18n } from "../../app/i18n";
 import type { Evidence, Rule } from "../../generated/bindings";
 import { desktop } from "../../lib/desktop";
 import type { Screenshot } from "../../lib/desktop";
@@ -16,6 +17,8 @@ function percent(value: number, total: number): string {
 }
 
 export function EvidencePanel({ evidence, screenshots, selectedRule }: EvidencePanelProps) {
+  const { locale } = useI18n();
+  const isEnglish = locale === "en-US";
   const selectedEvidence = selectedRule
     ? evidence.filter((item) => selectedRule.evidence_ids.includes(item.id))
     : [];
@@ -24,8 +27,10 @@ export function EvidencePanel({ evidence, screenshots, selectedRule }: EvidenceP
 
   return (
     <section className="page-panel" aria-label="Evidence panel">
-      <h2>Evidence</h2>
-      {!selectedRule ? <p>Select a rule to inspect evidence.</p> : null}
+      <h2>{isEnglish ? "Evidence" : "证据"}</h2>
+      {!selectedRule ? (
+        <p>{isEnglish ? "Select a rule to inspect evidence." : "选择规则后可查看对应证据。"}</p>
+      ) : null}
       {selectedEvidence.map((item) => {
         const screenshot =
           screenshots.find((candidate) => candidate.id === item.screenshot_id) ?? null;
@@ -64,7 +69,11 @@ export function EvidencePanel({ evidence, screenshots, selectedRule }: EvidenceP
           </article>
         );
       })}
-      {hasMissingEvidence ? <p role="alert">Missing evidence</p> : null}
+      {hasMissingEvidence ? (
+        <p role="alert" aria-label="Missing evidence">
+          {isEnglish ? "Missing evidence" : "缺少证据"}
+        </p>
+      ) : null}
     </section>
   );
 }

@@ -227,12 +227,12 @@ export function ScreenshotManagerPage() {
         <table>
           <thead>
             <tr>
-              <th>Preview</th>
-              <th>Page</th>
-              <th>Scene</th>
-              <th>Dimensions</th>
-              <th>Media</th>
-              <th>Actions</th>
+              <th>{isEnglish ? "Preview" : "预览"}</th>
+              <th>{isEnglish ? "Page" : "页面"}</th>
+              <th>{isEnglish ? "Scene" : "场景"}</th>
+              <th>{isEnglish ? "Dimensions" : "尺寸"}</th>
+              <th>{isEnglish ? "Media" : "格式"}</th>
+              <th>{isEnglish ? "Actions" : "操作"}</th>
             </tr>
           </thead>
           <tbody>
@@ -276,16 +276,20 @@ export function ScreenshotManagerPage() {
                   <button
                     className="button-secondary"
                     type="button"
+                    aria-label={`Save metadata for ${screenshot.page_name}`}
                     onClick={() => void saveMetadata(screenshot)}
                   >
-                    Save metadata for {screenshot.page_name}
+                    {isEnglish
+                      ? `Save metadata for ${screenshot.page_name}`
+                      : `保存 ${screenshot.page_name} 的标注`}
                   </button>
                   <button
                     className="button-danger"
                     type="button"
+                    aria-label={`Remove ${screenshot.page_name}`}
                     onClick={() => void removeScreenshot(screenshot)}
                   >
-                    Remove {screenshot.page_name}
+                    {isEnglish ? `Remove ${screenshot.page_name}` : `移除 ${screenshot.page_name}`}
                   </button>
                 </td>
               </tr>

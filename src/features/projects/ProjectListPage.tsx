@@ -96,7 +96,7 @@ export function ProjectListPage() {
         />
       ) : null}
 
-      {loading ? <p>Loading projects…</p> : null}
+      {loading ? <p>{isEnglish ? "Loading projects…" : "正在加载项目…"}</p> : null}
       {error ? <p role="alert">{error}</p> : null}
       {!loading && projects.length === 0 ? (
         <div className="empty-state">
@@ -122,7 +122,7 @@ export function ProjectListPage() {
                 aria-label={`Archive ${project.name}`}
                 onClick={() => void archiveProject(project)}
               >
-                Archive
+                {isEnglish ? "Archive" : "归档"}
               </button>
               <button
                 className="button-danger"
@@ -130,7 +130,7 @@ export function ProjectListPage() {
                 aria-label={`Delete ${project.name}`}
                 onClick={() => setDeleteCandidate(project)}
               >
-                Delete
+                {isEnglish ? "Delete" : "删除"}
               </button>
             </li>
           ))}
@@ -140,11 +140,15 @@ export function ProjectListPage() {
       {deleteCandidate ? (
         <section className="alert" aria-label="Delete project confirmation">
           <p>Delete {deleteCandidate.name}?</p>
-          <button type="button" onClick={() => void deleteProject()}>
-            Confirm delete
+          <button type="button" aria-label="Confirm delete" onClick={() => void deleteProject()}>
+            {isEnglish ? "Confirm delete" : "确认删除"}
           </button>
-          <button type="button" onClick={() => setDeleteCandidate(null)}>
-            Cancel delete
+          <button
+            type="button"
+            aria-label="Cancel delete"
+            onClick={() => setDeleteCandidate(null)}
+          >
+            {isEnglish ? "Cancel delete" : "取消删除"}
           </button>
         </section>
       ) : null}

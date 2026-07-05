@@ -1,3 +1,4 @@
+import { useI18n } from "../../app/i18n";
 import type { DesignSpec, Rule } from "../../generated/bindings";
 import { getRuleGroups } from "./ruleGroups";
 
@@ -6,11 +7,13 @@ type MarkdownPreviewProps = {
 };
 
 export function MarkdownPreview({ spec }: MarkdownPreviewProps) {
+  const { locale } = useI18n();
+  const isEnglish = locale === "en-US";
   const markdown = spec ? compilePreviewMarkdown(spec) : "";
 
   return (
     <section className="page-panel" aria-label="Markdown preview">
-      <h2>Markdown preview</h2>
+      <h2>{isEnglish ? "Markdown preview" : "Markdown 预览"}</h2>
       <pre data-testid="markdown-preview">{markdown}</pre>
     </section>
   );

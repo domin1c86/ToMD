@@ -105,14 +105,14 @@ export function WorkbenchPage() {
           {isEnglish ? "Export DESIGN.md" : "去导出 DESIGN.md"}
         </Link>
       </div>
-      {loading ? <p>Loading design spec…</p> : null}
+      {loading ? <p>{isEnglish ? "Loading design spec…" : "正在加载设计规范…"}</p> : null}
       {error ? <p role="alert">{error}</p> : null}
 
       {spec ? (
         <div className="workbench-grid">
           <EvidencePanel evidence={spec.evidence} screenshots={screenshots} selectedRule={selectedRule} />
           <section className="page-panel" aria-label="Rule groups">
-            <h2>Rules</h2>
+            <h2>{isEnglish ? "Rules" : "规则"}</h2>
             {getRuleGroups(spec).map((group) => (
               <section key={group.key} aria-label={`${group.key} rules`}>
                 <h3>{group.key}</h3>

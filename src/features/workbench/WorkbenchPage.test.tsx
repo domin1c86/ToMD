@@ -46,7 +46,7 @@ describe("WorkbenchPage", () => {
 
     expect(screen.getByText("Highlighted screenshot: shot-1")).toBeVisible();
     expect(screen.getByText("Card corner evidence")).toBeVisible();
-    expect(screen.getByText("Low confidence")).toBeVisible();
+    expect(screen.getByText("置信度较低")).toBeVisible();
   });
 
   it("accepts, edits, and rejects rules while updating the markdown preview", async () => {
@@ -96,7 +96,7 @@ describe("WorkbenchPage", () => {
     render(<App />);
 
     await user.click(await screen.findByRole("button", { name: "Use compact top navigation" }));
-    expect(screen.getByText("Missing evidence")).toBeVisible();
+    expect(screen.getByText("缺少证据")).toBeVisible();
 
     await user.click(screen.getByRole("button", { name: "Accept rule" }));
 

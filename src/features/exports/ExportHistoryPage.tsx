@@ -100,11 +100,11 @@ export function ExportHistoryPage() {
           {isEnglish ? "Export current version" : "导出当前版本"}
         </button>
       </div>
-      {loading ? <p>Loading exports…</p> : null}
+      {loading ? <p>{isEnglish ? "Loading exports…" : "正在加载导出记录…"}</p> : null}
       {error ? <p role="alert">{error}</p> : null}
 
       <section className="card" aria-label="Export preview">
-        <h3>Preview</h3>
+        <h3>{isEnglish ? "Preview" : "预览"}</h3>
         <pre data-testid="export-preview">{spec ? compilePreview(spec) : ""}</pre>
       </section>
 
@@ -120,16 +120,18 @@ export function ExportHistoryPage() {
             <button
               className="button-secondary"
               type="button"
+              aria-label={`Copy content for ${exportVersion.id}`}
               onClick={() => void copyContent(exportVersion)}
             >
-              Copy content for {exportVersion.id}
+              {isEnglish ? "Copy DESIGN.md content" : "复制 DESIGN.md 内容"}
             </button>
             <button
               className="button-secondary"
               type="button"
+              aria-label={`Reveal in folder for ${exportVersion.id}`}
               onClick={() => void revealExport(exportVersion)}
             >
-              Reveal in folder for {exportVersion.id}
+              {isEnglish ? "Reveal in folder" : "在文件夹中显示"}
             </button>
           </li>
         ))}
