@@ -91,6 +91,32 @@ describe("ProjectListPage", () => {
     await waitFor(() => expect(mockedDesktop.listProjects).toHaveBeenCalledTimes(3));
   });
 
+  it("surfaces archive and delete failures instead of failing silently", async () => {
+    const user = userEvent.setup();
+    mockedDesktop.listProjects.mockResolvedValue([
+      {
+        id: "project-1",
+        name: "Finance app",
+        platform: "mobile",
+        archived_at: null,
+        created_at: "2026-07-01T00:00:00Z",
+        updated_at: "2026-07-01T00:00:00Z",
+      },
+    ]);
+    mockedDesktop.archiveProject.mockRejectedValue(new Error("archive failed"));
+    mockedDesktop.deleteProject.mockRejectedValue(new Error("delete failed"));
+
+    render(<App />);
+
+    await user.click(await screen.findByRole("button", { name: "Archive Finance app" }));
+    expect(await screen.findByText("archive failed")).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: "Delete Finance app" }));
+    await user.click(screen.getByRole("button", { name: "Confirm delete" }));
+    expect(await screen.findByText("delete failed")).toBeVisible();
+    expect(screen.getByText("Delete Finance app?")).toBeVisible();
+  });
+
   it("keeps local project management available when provider commands are unavailable", async () => {
     render(<App />);
 

@@ -33,7 +33,13 @@ export function ProjectListPage() {
   }, []);
 
   const archiveProject = async (project: Project) => {
-    await desktop.archiveProject({ projectId: project.id });
+    setError(null);
+    try {
+      await desktop.archiveProject({ projectId: project.id });
+    } catch (caught) {
+      setError(formatProjectListError(caught));
+      return;
+    }
     await loadProjects();
   };
 
@@ -41,7 +47,13 @@ export function ProjectListPage() {
     if (!deleteCandidate) {
       return;
     }
-    await desktop.deleteProject({ projectId: deleteCandidate.id });
+    setError(null);
+    try {
+      await desktop.deleteProject({ projectId: deleteCandidate.id });
+    } catch (caught) {
+      setError(formatProjectListError(caught));
+      return;
+    }
     setDeleteCandidate(null);
     await loadProjects();
   };
