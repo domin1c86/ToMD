@@ -93,12 +93,7 @@ impl MultimodalProvider for OpenAiCompatibleProvider {
                 "content": content,
             }],
             "response_format": {
-                "type": "json_schema",
-                "json_schema": {
-                    "name": "design_spec",
-                    "strict": true,
-                    "schema": request.json_schema,
-                },
+                "type": "json_object",
             },
         });
 

@@ -92,10 +92,7 @@ impl MultimodalProvider for OpenAiProvider {
             }],
             "text": {
                 "format": {
-                    "type": "json_schema",
-                    "name": "design_spec",
-                    "strict": true,
-                    "schema": request.json_schema,
+                    "type": "json_object",
                 },
             },
         });

@@ -20,7 +20,7 @@ fn config(base_url: &str) -> ProviderConfig {
 }
 
 #[tokio::test]
-async fn openai_preset_uses_responses_api_with_input_images_and_strict_schema() {
+async fn openai_preset_uses_responses_api_with_input_images_and_json_output() {
     let server = MockServer::spawn(vec![MockResponse::json(
         200,
         r#"{"id":"resp_1","output":[{"type":"message","role":"assistant","content":[{"type":"output_text","text":"{\"spacing\":[]}"}]}],"usage":{"input_tokens":10}}"#,
@@ -83,11 +83,7 @@ async fn openai_preset_uses_responses_api_with_input_images_and_strict_schema() 
             "image_url": "data:image/jpeg;base64,BQYH"
         })
     );
-    assert_eq!(body["text"]["format"]["type"], "json_schema");
-    assert_eq!(body["text"]["format"]["name"], "design_spec");
-    assert_eq!(body["text"]["format"]["strict"], true);
-    assert_eq!(
-        body["text"]["format"]["schema"],
-        json!({"type":"object","properties":{"spacing":{"type":"array"}}})
-    );
+    assert_eq!(body["text"]["format"]["type"], "json_object");
+    assert!(body["text"]["format"].get("schema").is_none());
+    assert!(body["text"]["format"].get("strict").is_none());
 }

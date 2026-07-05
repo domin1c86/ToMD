@@ -109,6 +109,7 @@ where
             project.platform,
             &project.target_product_type,
             &screenshots,
+            &schema,
         );
         let images = screenshots
             .iter()
@@ -141,8 +142,8 @@ where
                     .provider
                     .analyze(AnalysisRequest {
                         model: self.model.clone(),
-                        prompt: repair_prompt(&first_response.body, &first_error.to_string()),
-                        json_schema: schema,
+                        prompt: repair_prompt(&first_response.body, &first_error.to_string(), &schema),
+                        json_schema: schema.clone(),
                         images,
                     })
                     .await?;

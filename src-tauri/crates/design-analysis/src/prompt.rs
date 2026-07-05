@@ -1,4 +1,5 @@
 use design_core::Platform;
+use serde_json::Value;
 use uuid::Uuid;
 
 use crate::orchestrator::AnalysisScreenshot;
@@ -15,6 +16,7 @@ pub fn build_analysis_prompt(
     platform: Platform,
     target_product_type: &str,
     screenshots: &[AnalysisScreenshot],
+    schema: &Value,
 ) -> String {
     let mut prompt = String::from(FIXED_ANALYSIS_INSTRUCTIONS);
     prompt.push_str("\n\nProject context:\n");
@@ -30,5 +32,17 @@ pub fn build_analysis_prompt(
         ));
     }
 
+    push_schema_section(&mut prompt, schema);
     prompt
+}
+
+/// Providers request plain JSON output, so the schema travels inside the
+/// prompt instead of the request's structured-output constraint.
+pub(crate) fn push_schema_section(prompt: &mut String, schema: &Value) {
+    if schema.is_null() {
+        return;
+    }
+    prompt.push_str("\nThe supplied schema:\n");
+    prompt.push_str(&schema.to_string());
+    prompt.push('\n');
 }

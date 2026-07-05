@@ -92,7 +92,6 @@ impl MultimodalProvider for GeminiProvider {
             }],
             "generationConfig": {
                 "response_mime_type": "application/json",
-                "response_schema": request.json_schema,
             },
         });
 

@@ -20,7 +20,7 @@ fn config(base_url: &str) -> ProviderConfig {
 }
 
 #[tokio::test]
-async fn gemini_preset_uses_generate_content_with_inline_data_and_response_schema() {
+async fn gemini_preset_uses_generate_content_with_inline_data_and_json_mime_type() {
     let server = MockServer::spawn(vec![MockResponse::json(
         200,
         r#"{"candidates":[{"content":{"parts":[{"text":"{\"typography\":[]}"}],"role":"model"},"finishReason":"STOP"}]}"#,
@@ -75,8 +75,5 @@ async fn gemini_preset_uses_generate_content_with_inline_data_and_response_schem
         body["generationConfig"]["response_mime_type"],
         "application/json"
     );
-    assert_eq!(
-        body["generationConfig"]["response_schema"],
-        json!({"type":"object","properties":{"typography":{"type":"array"}}})
-    );
+    assert!(body["generationConfig"].get("response_schema").is_none());
 }

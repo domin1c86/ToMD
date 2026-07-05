@@ -39,7 +39,7 @@ fn request() -> AnalysisRequest {
 }
 
 #[tokio::test]
-async fn sends_chat_completions_shape_with_data_url_and_strict_json_schema() {
+async fn sends_chat_completions_shape_with_data_url_and_json_object_output() {
     let server = MockServer::spawn(vec![MockResponse::json(
         200,
         r#"{"choices":[{"message":{"content":"{\"colors\":[]}"}}]}"#,
@@ -82,16 +82,8 @@ async fn sends_chat_completions_shape_with_data_url_and_strict_json_schema() {
             "image_url": { "url": "data:image/png;base64,AQIDBA==" }
         })
     );
-    assert_eq!(body["response_format"]["type"], "json_schema");
-    assert_eq!(
-        body["response_format"]["json_schema"]["name"],
-        "design_spec"
-    );
-    assert_eq!(body["response_format"]["json_schema"]["strict"], true);
-    assert_eq!(
-        body["response_format"]["json_schema"]["schema"],
-        request().json_schema
-    );
+    assert_eq!(body["response_format"]["type"], "json_object");
+    assert!(body["response_format"].get("json_schema").is_none());
 }
 
 #[tokio::test]
