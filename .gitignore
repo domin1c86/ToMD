@@ -21,5 +21,7 @@ Thumbs.db
 .idea/
 .vscode/
 
+.claude/
+docs/
 AGENTS.md
 CLAUDE.md
