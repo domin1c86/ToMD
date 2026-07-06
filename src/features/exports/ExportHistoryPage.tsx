@@ -103,39 +103,49 @@ export function ExportHistoryPage() {
       {loading ? <p>{isEnglish ? "Loading exports…" : "正在加载导出记录…"}</p> : null}
       {error ? <p role="alert">{error}</p> : null}
 
-      <section className="card" aria-label="Export preview">
-        <h3>{isEnglish ? "Preview" : "预览"}</h3>
-        <pre data-testid="export-preview">{spec ? compilePreview(spec) : ""}</pre>
-      </section>
-
       {revealedPath ? <p>Reveal in folder: {revealedPath}</p> : null}
       {copiedExportId ? <p>Copied DESIGN.md content for {copiedExportId}</p> : null}
 
-      <ul aria-label="Export history">
-        {exports.map((exportVersion) => (
-          <li className="card" key={exportVersion.id}>
-            <p>{exportVersion.created_at}</p>
-            <p>Source spec version: {exportVersion.spec_version_id}</p>
-            <p>{exportVersion.relative_path}</p>
-            <button
-              className="button-secondary"
-              type="button"
-              aria-label={`Copy content for ${exportVersion.id}`}
-              onClick={() => void copyContent(exportVersion)}
-            >
-              {isEnglish ? "Copy DESIGN.md content" : "复制 DESIGN.md 内容"}
-            </button>
-            <button
-              className="button-secondary"
-              type="button"
-              aria-label={`Reveal in folder for ${exportVersion.id}`}
-              onClick={() => void revealExport(exportVersion)}
-            >
-              {isEnglish ? "Reveal in folder" : "在文件夹中显示"}
-            </button>
-          </li>
-        ))}
-      </ul>
+      <div className="exports-grid">
+        <ul className="export-list" aria-label="Export history">
+          {exports.map((exportVersion) => (
+            <li className="card exp-item" key={exportVersion.id}>
+              <div className="exp-item__info">
+                <p className="exp-item__when mono">{exportVersion.created_at}</p>
+                <p className="exp-item__path">Source spec version: {exportVersion.spec_version_id}</p>
+                <p className="exp-item__path">{exportVersion.relative_path}</p>
+              </div>
+              <div className="exp-item__actions">
+                <button
+                  className="button-secondary"
+                  type="button"
+                  aria-label={`Copy content for ${exportVersion.id}`}
+                  onClick={() => void copyContent(exportVersion)}
+                >
+                  {isEnglish ? "Copy content" : "复制内容"}
+                </button>
+                <button
+                  className="button-quiet"
+                  type="button"
+                  aria-label={`Reveal in folder for ${exportVersion.id}`}
+                  onClick={() => void revealExport(exportVersion)}
+                >
+                  {isEnglish ? "Reveal in folder" : "在文件夹中显示"}
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+
+        <section className="paperwrap" aria-label="Export preview">
+          <div className="paper-progress">
+            <span>{isEnglish ? "Preview" : "预览"}</span>
+          </div>
+          <div className="paper">
+            <pre data-testid="export-preview">{spec ? compilePreview(spec) : ""}</pre>
+          </div>
+        </section>
+      </div>
       </div>
       <aside className="help-panel">
         <h3>{isEnglish ? "How to use the export" : "如何使用导出文件"}</h3>

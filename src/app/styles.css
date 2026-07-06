@@ -734,6 +734,59 @@ select {
 }
 
 /* ============================================================
+   Export history
+   ============================================================ */
+
+.exports-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 1rem;
+  align-items: start;
+  margin-top: 0.9rem;
+}
+
+.export-list {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.exp-item {
+  display: flex;
+  gap: 0.9rem;
+  align-items: center;
+}
+
+.exp-item__info {
+  min-width: 0;
+}
+
+.exp-item p {
+  margin: 0.1rem 0;
+}
+
+.exp-item__when {
+  font-size: 0.85rem;
+}
+
+.exp-item__path {
+  font: 400 10.5px/1.5 var(--font-mono);
+  color: var(--faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.exp-item__actions {
+  display: flex;
+  gap: 0.35rem;
+  margin-left: auto;
+  flex: none;
+}
+
+/* ============================================================
    Tables
    ============================================================ */
 
