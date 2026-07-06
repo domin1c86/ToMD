@@ -1,4 +1,4 @@
-import { BrowserRouter, Link, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 import { AnalysisStartPage } from "../features/analysis/AnalysisStartPage";
 import { ExportHistoryPage } from "../features/exports/ExportHistoryPage";
@@ -17,9 +17,6 @@ export function App() {
         <I18nProvider>
           <AppShell>
             <h1 className="sr-only">Design Language Extractor</h1>
-            <Link className="sr-only" to="/">
-              Projects
-            </Link>
         <Routes>
           <Route path="/" element={<ProjectListPage />} />
           <Route path="/projects/:projectId" element={<ScreenshotManagerPage />} />

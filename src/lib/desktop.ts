@@ -1,6 +1,7 @@
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 
 import type { DesignSpec, Platform, RuleStatus } from "../generated/bindings";
+import { recordNetworkRequest } from "./networkCounter";
 
 export type Project = {
   id: string;
@@ -176,16 +177,20 @@ export const desktop = {
     command<Provider, SaveProviderInput>("save_provider", input),
   deleteProvider: (input: ProviderIdInput) =>
     command<void, ProviderIdInput>("delete_provider", input),
-  testProvider: (input: ProviderIdInput) =>
-    command<ProviderCapabilities, ProviderIdInput>("test_provider", input),
+  testProvider: (input: ProviderIdInput) => {
+    recordNetworkRequest();
+    return command<ProviderCapabilities, ProviderIdInput>("test_provider", input);
+  },
 
   previewAnalysisRequest: (input: AnalysisSelectionInput) =>
     command<AnalysisPreview, AnalysisSelectionInput>(
       "preview_analysis_request",
       input,
     ),
-  analyzeProject: (input: AnalysisSelectionInput) =>
-    command<AnalysisOutcome, AnalysisSelectionInput>("analyze_project", input),
+  analyzeProject: (input: AnalysisSelectionInput) => {
+    recordNetworkRequest();
+    return command<AnalysisOutcome, AnalysisSelectionInput>("analyze_project", input);
+  },
   getDesignSpec: (input: ProjectIdInput) =>
     command<DesignSpec, ProjectIdInput>("get_design_spec", input),
   updateRule: (input: UpdateRuleInput) =>

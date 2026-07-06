@@ -250,206 +250,202 @@ a {
 }
 
 /* ============================================================
-   App shell (rebuilt in M2; legacy classes kept working)
+   App frame: headerbar / sidebar+workspace / statusbar
    ============================================================ */
 
-.app-shell {
-  display: grid;
-  grid-template-columns: 224px minmax(0, 1fr);
-  min-height: 100vh;
-}
-
-.app-sidebar {
+.frame {
   display: flex;
   flex-direction: column;
-  gap: 1.1rem;
-  min-height: 100vh;
-  padding: 1rem 0.75rem 0.75rem;
-  border-right: 1px solid var(--border-soft);
-  background: var(--bg);
+  height: 100vh;
 }
 
-.app-brand {
+.headerbar {
+  flex: none;
+  height: 48px;
   display: flex;
-  gap: 0.7rem;
   align-items: center;
-  padding: 0 0.35rem;
+  gap: 0.75rem;
+  padding: 0 1rem;
+  border-bottom: 1px solid var(--border-soft);
+  background: var(--bg);
 }
 
 .app-brand__mark {
   display: grid;
   place-items: center;
-  width: 2rem;
-  height: 2rem;
+  width: 1.7rem;
+  height: 1.7rem;
   border-radius: var(--r-sm);
   color: var(--primary-fg);
   background: var(--primary-bg);
-  font: 600 11px/1 var(--font-mono);
+  font: 600 10px/1 var(--font-mono);
+  flex: none;
 }
 
-.app-brand strong,
-.app-brand small {
-  display: block;
-}
-
-.app-brand small {
-  font-size: 0.78rem;
-}
-
-.app-sidebar__primary-action {
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
-  gap: 0.45rem;
-  border: 1px solid var(--primary-bg);
-  border-radius: var(--r-sm);
-  padding: 0.55rem 0.9rem;
-  color: var(--primary-fg);
-  background: var(--primary-bg);
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.app-sidebar__primary-action:hover {
-  background: var(--primary-hover);
-  border-color: var(--primary-hover);
-}
-
-.app-sidebar__nav,
-.app-sidebar__footer {
-  display: grid;
-  gap: 0.2rem;
-}
-
-.app-sidebar__link {
-  display: grid;
-  grid-template-columns: 1.35rem 1fr;
-  gap: 0.55rem;
-  align-items: center;
-  border-radius: var(--r-sm);
-  padding: 0.5rem 0.6rem;
-  color: var(--muted);
-}
-
-.app-sidebar__link:hover {
-  background: var(--surface-2);
-  color: var(--text);
-}
-
-.app-sidebar__link-en {
-  grid-column: 2;
-  font-size: 0.74rem;
-}
-
-.app-sidebar__footer {
-  margin-top: auto;
-  padding-top: 0.9rem;
-  border-top: 1px solid var(--border-soft);
-  color: var(--muted);
-  font-size: 0.85rem;
-}
-
-.app-workspace {
-  min-width: 0;
-  background: var(--surface);
-}
-
-.app-topbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  min-height: 56px;
-  padding: 0.7rem 1.4rem;
-  border-bottom: 1px solid var(--border-soft);
-  background: var(--bg);
-}
-
-.app-topbar h1 {
+.headerbar__title {
   margin: 0;
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 600;
   letter-spacing: 0.01em;
 }
 
-.app-topbar h1 span:not(.app-topbar__title-main) {
-  margin-left: 0.75rem;
-  color: var(--muted);
-  font-size: 0.85rem;
-  font-weight: 400;
-}
-
-.app-topbar__actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-/* legacy stepper (removed in M2) */
-.workflow-stepper {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 0.6rem;
-  padding: 0.8rem 1.4rem;
-  border-bottom: 1px solid var(--border-soft);
-  background: var(--surface);
-}
-
-.workflow-stepper__item {
-  display: flex;
-  gap: 0.6rem;
-  align-items: center;
-  min-width: 0;
-  padding: 0.55rem 0.65rem;
-  border: 1px solid var(--border-soft);
-  border-radius: var(--r-md);
-  color: var(--muted);
-  background: var(--surface);
-}
-
-.workflow-stepper__marker {
-  display: grid;
-  flex: 0 0 auto;
-  place-items: center;
-  width: 1.6rem;
-  height: 1.6rem;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: none;
+.headerbar__tagline {
   color: var(--faint);
-  font: 500 10px/1 var(--font-mono);
+  font-size: 0.8rem;
 }
 
-.workflow-stepper__item strong,
-.workflow-stepper__item small {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.headerbar__spacer,
+.sidebar__fill,
+.statusbar__spacer {
+  flex: 1;
 }
 
-.workflow-stepper__item strong {
+.headerbar__chip {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.2rem 0.7rem;
+  color: var(--muted);
+  background: var(--surface-2);
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.headerbar__chip:hover {
   color: var(--text);
-  font-weight: 500;
+  border-color: var(--faint);
 }
 
-.workflow-stepper__item--active {
-  border-color: var(--border);
+.frame-shell {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+.sidebar {
+  width: 224px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  padding: 0.9rem 0.65rem 0.65rem;
+  border-right: 1px solid var(--border-soft);
+  background: var(--bg);
+  overflow: auto;
+}
+
+.sidebar__label {
+  margin: 0 0 0.5rem;
+  padding: 0 0.6rem;
+  font: 500 10.5px/1 var(--font-mono);
+  color: var(--faint);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.sidebar-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sidebar-step {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: var(--r-sm);
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.sidebar-step:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.sidebar-step[aria-current="true"] {
   background: var(--surface-3);
-}
-
-.workflow-stepper__item--active .workflow-stepper__marker {
-  border-color: var(--text);
   color: var(--text);
 }
 
-.workflow-stepper__item--done .workflow-stepper__marker {
+.sidebar-step__n {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  display: grid;
+  place-items: center;
+  font: 500 10px/1 var(--font-mono);
+  color: var(--faint);
+}
+
+.sidebar-step--done .sidebar-step__n {
   border-color: transparent;
   background: var(--surface-3);
   color: var(--ok);
 }
 
+.sidebar-step[aria-current="true"] .sidebar-step__n {
+  border-color: var(--text);
+  color: var(--text);
+}
+
+.sidebar-privacy {
+  margin: 0 0.25rem;
+  border-top: 1px solid var(--border-soft);
+  padding: 0.8rem 0.45rem 0.25rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.sidebar-privacy__dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ok);
+  margin-right: 7px;
+}
+
+.sidebar-privacy__sub {
+  color: var(--faint);
+  font: 400 10.5px/1.6 var(--font-mono);
+  margin-top: 3px;
+}
+
+.app-workspace {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+}
+
 .app-main {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
   padding: 1.4rem;
+}
+
+.statusbar {
+  flex: none;
+  height: 30px;
+  border-top: 1px solid var(--border-soft);
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  padding: 0 1rem;
+  font: 400 11px/1 var(--font-mono);
+  color: var(--faint);
+  background: var(--bg);
+}
+
+.statusbar__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ok);
 }
 
 /* ============================================================

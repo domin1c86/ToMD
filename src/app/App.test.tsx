@@ -58,9 +58,9 @@ describe("App", () => {
     expect(await screen.findByText("设计规范提取器")).toBeVisible();
     expect(screen.getAllByText("项目").length).toBeGreaterThan(0);
     expect(screen.getAllByText("截图").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("模型").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("分析").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("审核导出").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("模型与分析").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("审核规则").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("导出").length).toBeGreaterThan(0);
 
     await user.click(screen.getByRole("button", { name: "Switch to English" }));
     expect((await screen.findAllByText("Design Language Extractor")).length).toBeGreaterThan(0);

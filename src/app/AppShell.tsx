@@ -1,7 +1,10 @@
-import { ReactNode, useMemo } from "react";
+import { ReactNode, useMemo, useSyncExternalStore } from "react";
 import { Link, useLocation } from "react-router-dom";
 
-import { WorkflowStep, WorkflowStepper } from "../components/workflow/WorkflowStepper";
+import {
+  getNetworkRequestCount,
+  subscribeNetworkRequests,
+} from "../lib/networkCounter";
 import { useI18n } from "./i18n";
 import { useTheme } from "./theme";
 
@@ -9,112 +12,106 @@ type AppShellProps = {
   children: ReactNode;
 };
 
+type StepKey = "projects" | "screenshots" | "provider" | "review" | "exports";
+
+const STEP_ORDER: StepKey[] = ["projects", "screenshots", "provider", "review", "exports"];
+
 export function AppShell({ children }: AppShellProps) {
   const location = useLocation();
   const { locale, setLocale, t } = useI18n();
   const { theme, setTheme } = useTheme();
+  const isEnglish = locale === "en-US";
   const projectId = useMemo(() => extractProjectId(location.pathname), [location.pathname]);
   const activeStep = useMemo(() => stepFromPath(location.pathname), [location.pathname]);
-  const nextAction = useMemo(() => getNextAction(activeStep, projectId, t), [activeStep, projectId, t]);
+  const requestCount = useSyncExternalStore(subscribeNetworkRequests, getNetworkRequestCount);
+
+  const steps: { key: StepKey; label: string; to: string; ariaLabel?: string }[] = [
+    { key: "projects", label: t("stepProjects"), to: "/", ariaLabel: "Projects" },
+    { key: "screenshots", label: t("stepScreenshots"), to: projectId ? `/projects/${projectId}` : "/" },
+    { key: "provider", label: t("stepProvider"), to: projectId ? `/projects/${projectId}/providers` : "/" },
+    { key: "review", label: t("stepReview"), to: projectId ? `/projects/${projectId}/workbench` : "/" },
+    { key: "exports", label: t("stepExports"), to: projectId ? `/projects/${projectId}/exports` : "/" },
+  ];
+  const activeIndex = STEP_ORDER.indexOf(activeStep);
 
   return (
-    <div className="app-shell">
-      <aside className="app-sidebar">
-        <Link className="app-brand" to="/">
-          <span className="app-brand__mark">MD</span>
-          <span>
-            <strong>{t("brand")}</strong>
-            <small>{t("localFirst")}</small>
-          </span>
-        </Link>
+    <div className="frame">
+      <header className="headerbar">
+        <span className="app-brand__mark" aria-hidden="true">MD</span>
+        <span className="headerbar__title">{t("appName")}</span>
+        <span className="headerbar__tagline">{t("localFirst")}</span>
+        <span className="headerbar__spacer" />
+        <button
+          className="headerbar__chip"
+          type="button"
+          aria-label={locale === "zh-CN" ? "Switch to English" : "Switch to Chinese"}
+          onClick={() => setLocale(locale === "zh-CN" ? "en-US" : "zh-CN")}
+        >
+          {locale === "zh-CN" ? t("switchToEnglish") : t("switchToChinese")}
+        </button>
+        <button
+          className="headerbar__chip"
+          type="button"
+          aria-label={theme === "light" ? "Switch to dark theme" : "Switch to light theme"}
+          onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+        >
+          {theme === "light" ? t("darkTheme") : t("lightTheme")}
+        </button>
+      </header>
 
-        <Link className="app-sidebar__primary-action" to="/">
-          <span aria-hidden="true">＋</span>
-          {t("newProject")}
-        </Link>
+      <div className="frame-shell">
+        <nav className="sidebar" aria-label="Primary navigation">
+          <p className="sidebar__label">{t("flowLabel")}</p>
+          <div className="sidebar-steps">
+            {steps.map((step, index) => {
+              const isCurrent = step.key === activeStep;
+              const isDone = projectId !== null && index < activeIndex;
+              return (
+                <Link
+                  key={step.key}
+                  className={`sidebar-step${isDone ? " sidebar-step--done" : ""}`}
+                  aria-current={isCurrent ? "true" : undefined}
+                  aria-label={step.ariaLabel}
+                  to={step.to}
+                >
+                  <span className="sidebar-step__n" aria-hidden="true">
+                    {isDone ? "✓" : index + 1}
+                  </span>
+                  <span>{step.label}</span>
+                </Link>
+              );
+            })}
+          </div>
 
-        <nav className="app-sidebar__nav" aria-label="Primary navigation">
-          <Link className="app-sidebar__link" to="/">
-            <span aria-hidden="true">▦</span>
-            <span>{t("projects")}</span>
-            <span className="app-sidebar__link-en">Projects</span>
-          </Link>
-          <Link className="app-sidebar__link" to={projectId ? `/projects/${projectId}/providers` : "/"}>
-            <span aria-hidden="true">◈</span>
-            <span>{t("providers")}</span>
-            <span className="app-sidebar__link-en">Providers</span>
-          </Link>
-          <Link className="app-sidebar__link" to={projectId ? `/projects/${projectId}/exports` : "/"}>
-            <span aria-hidden="true">□</span>
-            <span>{t("exports")}</span>
-            <span className="app-sidebar__link-en">Exports</span>
-          </Link>
+          <div className="sidebar__fill" />
+
+          <div className="sidebar-privacy">
+            <div>
+              <span className="sidebar-privacy__dot" aria-hidden="true" />
+              {t("privacyLocal")}
+            </div>
+            <div className="sidebar-privacy__sub">
+              {isEnglish
+                ? `${requestCount} network requests this session`
+                : `本次会话 ${requestCount} 次网络请求`}
+            </div>
+          </div>
         </nav>
 
-        <div className="app-sidebar__footer">
-          <span>{t("settings")}</span>
-          <span>{t("help")}</span>
+        <div className="app-workspace">
+          <main className="app-main">{children}</main>
         </div>
-      </aside>
-
-      <div className="app-workspace">
-        <header className="app-topbar">
-          <div>
-            <p className="eyebrow">{t("localFirst")}</p>
-            <h1>
-              <span className="app-topbar__title-main">{t("appName")}</span>
-              <span>{t("appNameEn")}</span>
-            </h1>
-          </div>
-          <div className="app-topbar__actions">
-            <Link className="button-primary" to={nextAction.to}>
-              {nextAction.label}
-            </Link>
-            <button
-              className="segmented-button"
-              type="button"
-              aria-label={locale === "zh-CN" ? "Switch to English" : "Switch to Chinese"}
-              onClick={() => setLocale(locale === "zh-CN" ? "en-US" : "zh-CN")}
-            >
-              {locale === "zh-CN" ? t("switchToEnglish") : t("switchToChinese")}
-            </button>
-            <button
-              className="segmented-button"
-              type="button"
-              aria-label={theme === "light" ? "Switch to dark theme" : "Switch to light theme"}
-              onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-            >
-              {theme === "light" ? t("darkTheme") : t("lightTheme")}
-            </button>
-          </div>
-        </header>
-
-        <WorkflowStepper activeStep={activeStep} projectId={projectId} />
-
-        <main className="app-main">{children}</main>
       </div>
+
+      <footer className="statusbar">
+        <span className="statusbar__dot" aria-hidden="true" />
+        <span>{isEnglish ? "Local data · SQLite" : "本地数据 · SQLite"}</span>
+        <span>{isEnglish ? "Credentials: OS keyring" : "凭据：系统凭据库"}</span>
+        <span className="statusbar__spacer" />
+        <span>v0.1.0</span>
+      </footer>
     </div>
   );
-}
-
-function getNextAction(
-  activeStep: WorkflowStep,
-  projectId: string | null,
-  t: (key: "newProject" | "screenshotsStep" | "providerStep" | "analysisStep" | "reviewExportStep") => string,
-) {
-  if (!projectId || activeStep === "project") {
-    return { label: t("newProject"), to: "/" };
-  }
-  if (activeStep === "screenshots") {
-    return { label: t("providerStep"), to: `/projects/${projectId}/providers` };
-  }
-  if (activeStep === "provider") {
-    return { label: t("analysisStep"), to: `/projects/${projectId}/analyze` };
-  }
-  if (activeStep === "analysis") {
-    return { label: t("reviewExportStep"), to: `/projects/${projectId}/workbench` };
-  }
-  return { label: t("reviewExportStep"), to: `/projects/${projectId}/exports` };
 }
 
 function extractProjectId(pathname: string): string | null {
@@ -122,18 +119,18 @@ function extractProjectId(pathname: string): string | null {
   return match?.[1] ?? null;
 }
 
-function stepFromPath(pathname: string): WorkflowStep {
-  if (pathname.includes("/providers")) {
+function stepFromPath(pathname: string): StepKey {
+  if (pathname.includes("/providers") || pathname.includes("/analyze")) {
     return "provider";
   }
-  if (pathname.includes("/analyze")) {
-    return "analysis";
+  if (pathname.includes("/workbench")) {
+    return "review";
   }
-  if (pathname.includes("/workbench") || pathname.includes("/exports")) {
-    return "review_export";
+  if (pathname.includes("/exports")) {
+    return "exports";
   }
   if (pathname.startsWith("/projects/")) {
     return "screenshots";
   }
-  return "project";
+  return "projects";
 }
