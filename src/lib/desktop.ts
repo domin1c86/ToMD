@@ -129,6 +129,17 @@ export type UpdateRuleInput = ProjectIdInput & {
   status?: RuleStatus;
 };
 
+export type RefineRulesInput = ProjectIdInput & {
+  providerId: string;
+  instruction: string;
+  ruleId?: string;
+};
+
+export type RefineRulesOutput = {
+  spec: DesignSpec;
+  affected_rule_ids: string[];
+};
+
 export type ExportDesignMarkdownInput = ProjectIdInput;
 
 export type ExportIdInput = ProjectIdInput & {
@@ -195,6 +206,10 @@ export const desktop = {
     command<DesignSpec, ProjectIdInput>("get_design_spec", input),
   updateRule: (input: UpdateRuleInput) =>
     command<DesignSpec, UpdateRuleInput>("update_rule", input),
+  refineRules: (input: RefineRulesInput) => {
+    recordNetworkRequest();
+    return command<RefineRulesOutput, RefineRulesInput>("refine_rules", input);
+  },
 
   listExports: (input: ProjectIdInput) =>
     command<ExportVersion[], ProjectIdInput>("list_exports", input),

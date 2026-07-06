@@ -51,6 +51,8 @@ pub enum AnalysisError {
     InvalidJson,
     #[error("model response failed schema validation")]
     InvalidSpec,
+    #[error("rule refinement failed: {0}")]
+    Refine(String),
 }
 
 #[async_trait]
@@ -209,7 +211,7 @@ fn parse_validate_and_prepare(
     Ok(spec)
 }
 
-fn extract_json(body: &str) -> Option<&str> {
+pub(crate) fn extract_json(body: &str) -> Option<&str> {
     let trimmed = body.trim();
     if !trimmed.starts_with("```") {
         return Some(trimmed);

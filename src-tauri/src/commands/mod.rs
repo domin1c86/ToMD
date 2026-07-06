@@ -26,6 +26,7 @@ pub fn handler() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Send + Syn
         analysis::analyze_project,
         rules::get_design_spec,
         rules::update_rule,
+        rules::refine_rules,
         exports::list_exports,
         exports::export_design_markdown,
         exports::read_export_markdown,

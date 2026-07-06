@@ -1,13 +1,15 @@
+use design_analysis::{refine_spec, RefineScope};
 use design_core::{DesignSpec, Rule, RuleStatus};
+use design_providers::{build_provider, read_provider_secret_with_store, SecretString};
 use design_storage::open_connection;
 use rusqlite::{params, OptionalExtension};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tauri::State;
 use uuid::Uuid;
 
 use crate::state::AppState;
 
-use super::{command_error, parse_uuid, CommandResult};
+use super::{command_error, parse_uuid, providers::get_provider_config, CommandResult};
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -66,6 +68,91 @@ pub async fn update_rule(
     })
     .await
     .map_err(command_error)?
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RefineRulesInput {
+    project_id: String,
+    provider_id: String,
+    instruction: String,
+    /// Restricts the instruction to one rule; omitted = all rules.
+    rule_id: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct RefineRulesOutput {
+    spec: DesignSpec,
+    affected_rule_ids: Vec<String>,
+}
+
+#[tauri::command]
+pub async fn refine_rules(
+    state: State<'_, AppState>,
+    input: RefineRulesInput,
+) -> CommandResult<RefineRulesOutput> {
+    let project_id = parse_uuid(&input.project_id, "projectId")?;
+    let provider_id = parse_uuid(&input.provider_id, "providerId")?;
+    let scope = match &input.rule_id {
+        Some(rule_id) => RefineScope::Rule(parse_uuid(rule_id, "ruleId")?),
+        None => RefineScope::AllRules,
+    };
+
+    let provider_config = get_provider_config(&state.db_path, provider_id)?;
+    let secret = read_provider_secret_with_store(&state.credential_store, &provider_config)
+        .map_err(command_error)?
+        .ok_or_else(|| "provider credential was not found".to_owned())?;
+    let provider = build_provider(
+        &provider_config,
+        SecretString::new(secret),
+        state.http_client.clone(),
+    )
+    .map_err(command_error)?;
+
+    let db_path = state.db_path.clone();
+    let spec = tauri::async_runtime::spawn_blocking({
+        let db_path = db_path.clone();
+        move || load_draft_spec(&db_path, project_id)
+    })
+    .await
+    .map_err(command_error)??;
+
+    let outcome = refine_spec(
+        provider.as_ref(),
+        &provider_config.model,
+        spec,
+        &input.instruction,
+        scope,
+    )
+    .await
+    .map_err(command_error)?;
+
+    let spec = outcome.spec;
+    let persisted_spec = tauri::async_runtime::spawn_blocking(move || {
+        let connection = open_connection(&db_path).map_err(command_error)?;
+        connection
+            .execute(
+                "UPDATE design_spec_drafts SET spec_json = ?1, updated_at = ?2 WHERE project_id = ?3",
+                params![
+                    serde_json::to_string(&spec).map_err(command_error)?,
+                    chrono::Utc::now().to_rfc3339(),
+                    project_id.to_string(),
+                ],
+            )
+            .map_err(command_error)?;
+        Ok::<DesignSpec, String>(spec)
+    })
+    .await
+    .map_err(command_error)??;
+
+    Ok(RefineRulesOutput {
+        spec: persisted_spec,
+        affected_rule_ids: outcome
+            .affected_rule_ids
+            .iter()
+            .map(Uuid::to_string)
+            .collect(),
+    })
 }
 
 pub fn load_draft_spec(db_path: &std::path::Path, project_id: Uuid) -> CommandResult<DesignSpec> {
