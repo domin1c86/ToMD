@@ -26,7 +26,7 @@ export function EvidencePanel({ evidence, screenshots, selectedRule }: EvidenceP
     selectedRule !== null && selectedRule.evidence_ids.some((id) => !evidence.some((item) => item.id === id));
 
   return (
-    <section className="page-panel" aria-label="Evidence panel">
+    <section className="evidence-block" aria-label="Evidence panel">
       <h2>{isEnglish ? "Evidence" : "证据"}</h2>
       {!selectedRule ? (
         <p>{isEnglish ? "Select a rule to inspect evidence." : "选择规则后可查看对应证据。"}</p>

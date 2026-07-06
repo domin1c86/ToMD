@@ -1,6 +1,6 @@
 import { useI18n } from "../../app/i18n";
 import type { DesignSpec, Rule } from "../../generated/bindings";
-import { getRuleGroups } from "./ruleGroups";
+import { getAllRules, getRuleGroups } from "./ruleGroups";
 
 type MarkdownPreviewProps = {
   spec: DesignSpec | null;
@@ -10,11 +10,24 @@ export function MarkdownPreview({ spec }: MarkdownPreviewProps) {
   const { locale } = useI18n();
   const isEnglish = locale === "en-US";
   const markdown = spec ? compilePreviewMarkdown(spec) : "";
+  const allRules = spec ? getAllRules(spec) : [];
+  const finalized = allRules.filter(
+    (rule) => rule.status === "accepted" || rule.status === "edited",
+  ).length;
 
   return (
-    <section className="page-panel" aria-label="Markdown preview">
-      <h2>{isEnglish ? "Markdown preview" : "Markdown 预览"}</h2>
-      <pre data-testid="markdown-preview">{markdown}</pre>
+    <section className="paperwrap" aria-label="Markdown preview">
+      <div className="paper-progress">
+        <span>{isEnglish ? "DESIGN.md preview" : "DESIGN.md 预览"}</span>
+        <span className="mono">
+          {isEnglish
+            ? `Finalized ${finalized} / ${allRules.length}`
+            : `已定稿 ${finalized} / ${allRules.length}`}
+        </span>
+      </div>
+      <div className="paper">
+        <pre data-testid="markdown-preview">{markdown}</pre>
+      </div>
     </section>
   );
 }

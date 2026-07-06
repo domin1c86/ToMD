@@ -10,6 +10,23 @@ import { MarkdownPreview } from "./MarkdownPreview";
 import { RuleEditor } from "./RuleEditor";
 import { getAllRules, getRuleGroups, replaceRuleInSpec } from "./ruleGroups";
 
+function countFinalized(rules: Rule[]): number {
+  return rules.filter((rule) => rule.status === "accepted" || rule.status === "edited").length;
+}
+
+function statusDotClass(status: RuleStatus): string {
+  switch (status) {
+    case "accepted":
+      return "st st--ok";
+    case "edited":
+      return "st st--edit";
+    case "rejected":
+      return "st st--bad";
+    default:
+      return "st";
+  }
+}
+
 export function WorkbenchPage() {
   const { projectId = "" } = useParams();
   const { locale } = useI18n();
@@ -110,26 +127,32 @@ export function WorkbenchPage() {
 
       {spec ? (
         <div className="workbench-grid">
-          <EvidencePanel evidence={spec.evidence} screenshots={screenshots} selectedRule={selectedRule} />
-          <section className="page-panel" aria-label="Rule groups">
+          <section className="page-panel rules-rail" aria-label="Rule groups">
             <h2>{isEnglish ? "Rules" : "规则"}</h2>
             {getRuleGroups(spec).map((group) => (
-              <section key={group.key} aria-label={`${group.key} rules`}>
-                <h3>{group.key}</h3>
+              <section className="rule-group" key={group.key} aria-label={`${group.key} rules`}>
+                <p className="rule-group__name">
+                  <span>{group.key}</span>
+                  <span>{countFinalized(group.rules)}/{group.rules.length}</span>
+                </p>
                 {group.rules.map((rule) => (
                   <button
-                    className="button-secondary"
+                    className="rule-item"
                     key={rule.id}
                     type="button"
                     aria-pressed={rule.id === selectedRule?.id}
                     onClick={() => setSelectedRuleId(rule.id)}
                   >
-                    {rule.statement}
+                    <span className={statusDotClass(rule.status)} aria-hidden="true" />
+                    <span>{rule.statement}</span>
                   </button>
                 ))}
               </section>
             ))}
+          </section>
+          <section className="page-panel workbench-center" aria-label="Rule review">
             <RuleEditor rule={selectedRule} onMutate={mutateSelectedRule} />
+            <EvidencePanel evidence={spec.evidence} screenshots={screenshots} selectedRule={selectedRule} />
           </section>
           <MarkdownPreview spec={spec} />
         </div>
