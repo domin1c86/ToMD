@@ -702,6 +702,38 @@ select {
 }
 
 /* ============================================================
+   Provider & disclosure cards
+   ============================================================ */
+
+.provider-list {
+  display: grid;
+  gap: 0.6rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.provider-item p {
+  margin: 0.15rem 0;
+  font-size: 0.88rem;
+}
+
+.provider-item button {
+  margin-top: 0.45rem;
+}
+
+.disclosure p {
+  margin: 0;
+  padding: 0.42rem 0;
+  border-top: 1px solid var(--border-soft);
+  font-size: 0.88rem;
+}
+
+.disclosure p:first-of-type {
+  border-top: 0;
+}
+
+/* ============================================================
    Tables
    ============================================================ */
 

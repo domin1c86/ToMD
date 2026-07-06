@@ -174,7 +174,7 @@ export function AnalysisStartPage() {
       ) : null}
 
       {preview ? (
-        <section className="card" aria-label="What leaves this device">
+        <section className="card disclosure" aria-label="What leaves this device">
           <h3>{isEnglish ? "What will be sent" : "会发送什么"}</h3>
           <p>Provider: {preview.provider_name}</p>
           <p>Model: {preview.model}</p>

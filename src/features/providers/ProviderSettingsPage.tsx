@@ -201,9 +201,9 @@ export function ProviderSettingsPage() {
       </form>
 
       {providers.length > 0 ? (
-        <ul aria-label="Saved providers">
+        <ul className="provider-list" aria-label="Saved providers">
           {providers.map((provider) => (
-            <li className="card" key={provider.id}>
+            <li className="card provider-item" key={provider.id}>
               <p>Provider: {provider.name}</p>
               <p>Model: {provider.model}</p>
               <p>{formatCredentialStatus(provider.has_credential, isEnglish)}</p>
