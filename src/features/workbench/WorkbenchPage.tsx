@@ -6,6 +6,7 @@ import type { DesignSpec, Rule, RuleStatus } from "../../generated/bindings";
 import { desktop } from "../../lib/desktop";
 import type { Screenshot } from "../../lib/desktop";
 import { EvidencePanel } from "./EvidencePanel";
+import { FineTuneChat } from "./FineTuneChat";
 import { MarkdownPreview } from "./MarkdownPreview";
 import { RuleEditor } from "./RuleEditor";
 import { getAllRules, getRuleGroups, replaceRuleInSpec } from "./ruleGroups";
@@ -156,6 +157,24 @@ export function WorkbenchPage() {
           </section>
           <MarkdownPreview spec={spec} />
         </div>
+      ) : null}
+
+      {spec ? (
+        <FineTuneChat
+          projectId={projectId}
+          selectedRuleId={selectedRule?.id ?? null}
+          ruleLabel={(ruleId) => {
+            const statement = rules.find((rule) => rule.id === ruleId)?.statement ?? ruleId;
+            return statement.length > 24 ? `${statement.slice(0, 24)}…` : statement;
+          }}
+          onApplied={(nextSpec, affectedRuleIds) => {
+            setSpec(nextSpec);
+            if (affectedRuleIds.length > 0) {
+              setSelectedRuleId(affectedRuleIds[0]);
+            }
+          }}
+          onSelectRule={setSelectedRuleId}
+        />
       ) : null}
     </section>
   );
