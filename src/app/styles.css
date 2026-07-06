@@ -1,39 +1,86 @@
+/* ============================================================
+   Design tokens — "dark tool, paper deliverable"
+   Light (default): warm paper on a cool desk; primary actions are INK.
+   Dark: graphite tool; primary actions are PAPER.
+   Font families come only from the --font-* variables below
+   (see the FONT INTERFACE block in index.html).
+   ============================================================ */
+
 :root {
   color-scheme: light;
-  --bg: #f5f7fb;
-  --panel: #ffffff;
-  --panel-muted: #f8fafc;
-  --text: #111827;
-  --text-muted: #667085;
-  --line: #d9e0ea;
-  --line-soft: #edf1f6;
-  --accent: #2457e6;
-  --accent-soft: #eef4ff;
-  --success: #16a34a;
-  --warning: #d97706;
-  --danger: #dc2626;
-  --shadow: 0 18px 50px rgb(15 23 42 / 9%);
-  font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  --font-ui: "IBM Plex Sans", "Noto Sans SC", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --font-doc: "Source Serif 4", serif;
+
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+
+  --bg: #f1f1f4;
+  --surface: #fafafb;
+  --surface-2: #ffffff;
+  --surface-3: #ebebef;
+  --border: #dbdbe1;
+  --border-soft: #e7e7ec;
+  --text: #1f2126;
+  --muted: #6b6e76;
+  --faint: #9b9ea7;
+  --paper: #f7f4ea;
+  --paper-shade: #e8e3d3;
+  --ink: #26241e;
+  --ink-soft: #6b675c;
+  --ok: #3e8f5c;
+  --edit: #a97f24;
+  --danger: #c05a4b;
+  --primary-bg: var(--ink);
+  --primary-fg: var(--paper);
+  --primary-hover: #3a372e;
+  --focus: var(--ink);
+  --shadow-paper: inset 0 0 0 1px var(--paper-shade), 0 8px 26px rgb(38 36 30 / 10%);
+  --shadow-float: 0 14px 40px rgb(20 22 30 / 18%);
+  --ev-dim: rgb(240 240 244 / 42%);
+
+  /* legacy aliases (older class names still reference these) */
+  --panel: var(--surface-2);
+  --panel-muted: var(--surface-3);
+  --line: var(--border);
+  --line-soft: var(--border-soft);
+  --text-muted: var(--muted);
+  --accent: var(--primary-bg);
+  --accent-soft: var(--surface-3);
+  --success: var(--ok);
+  --warning: var(--edit);
+  --shadow: none;
+
+  font-family: var(--font-ui);
   background: var(--bg);
   color: var(--text);
 }
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg: #0b1020;
-  --panel: #121a2d;
-  --panel-muted: #172037;
-  --text: #eef2ff;
-  --text-muted: #98a2b3;
-  --line: #263247;
-  --line-soft: #202a3d;
-  --accent: #7c9cff;
-  --accent-soft: #172554;
-  --success: #4ade80;
-  --warning: #fbbf24;
-  --danger: #f87171;
-  --shadow: 0 18px 50px rgb(0 0 0 / 30%);
+  --bg: #16171b;
+  --surface: #1d1f24;
+  --surface-2: #24262c;
+  --surface-3: #2a2d34;
+  --border: #2f323a;
+  --border-soft: #282b32;
+  --text: #e9e7e2;
+  --muted: #8f9088;
+  --faint: #5e616a;
+  --paper: #f3f1eb;
+  --paper-shade: #e7e3d8;
+  --ok: #79b98b;
+  --edit: #cfa75c;
+  --danger: #d97e70;
+  --primary-bg: var(--paper);
+  --primary-fg: var(--ink);
+  --primary-hover: #ffffff;
+  --focus: var(--paper);
+  --shadow-paper: inset 0 0 0 1px var(--paper-shade), 0 10px 30px rgb(0 0 0 / 35%);
+  --shadow-float: 0 14px 40px rgb(0 0 0 / 45%);
+  --ev-dim: rgb(14 15 18 / 35%);
 }
 
 * {
@@ -56,9 +103,9 @@ body {
   margin: 0;
   min-width: 960px;
   min-height: 100vh;
-  background:
-    radial-gradient(circle at top right, color-mix(in srgb, var(--accent) 11%, transparent), transparent 34rem),
-    var(--bg);
+  background: var(--bg);
+  font-size: 13px;
+  line-height: 1.55;
 }
 
 button,
@@ -66,6 +113,7 @@ input,
 select,
 textarea {
   font: inherit;
+  color: inherit;
 }
 
 a {
@@ -73,39 +121,170 @@ a {
   text-decoration: none;
 }
 
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ============================================================
+   Buttons
+   ============================================================ */
+
+.button-primary {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid var(--primary-bg);
+  border-radius: var(--r-sm);
+  padding: 0.42rem 0.9rem;
+  color: var(--primary-fg);
+  background: var(--primary-bg);
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.button-primary:hover {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+}
+
+.segmented-button,
+.button-secondary,
+.button-danger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 0.42rem 0.85rem;
+  color: var(--text);
+  background: var(--surface-2);
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.segmented-button:hover,
+.button-secondary:hover,
+.button-danger:hover {
+  border-color: var(--faint);
+}
+
+.button-danger {
+  color: var(--danger);
+}
+
+.button-quiet {
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  padding: 0.42rem 0.85rem;
+  color: var(--muted);
+  background: none;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.button-quiet:hover {
+  color: var(--text);
+}
+
+.segmented-button:disabled,
+.button-primary:disabled,
+.button-secondary:disabled,
+.button-danger:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* ============================================================
+   Small primitives
+   ============================================================ */
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  font: 500 10px/1 var(--font-mono);
+  letter-spacing: 0.06em;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 3px 6px;
+  color: var(--muted);
+  background: none;
+}
+
+.st {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--faint);
+}
+
+.st--ok {
+  background: var(--ok);
+}
+
+.st--edit {
+  background: var(--edit);
+}
+
+.st--bad {
+  background: var(--danger);
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+}
+
+.muted,
+.eyebrow,
+.app-brand small,
+.app-sidebar__link-en {
+  color: var(--muted);
+}
+
+/* ============================================================
+   App shell (rebuilt in M2; legacy classes kept working)
+   ============================================================ */
+
 .app-shell {
   display: grid;
-  grid-template-columns: 244px minmax(0, 1fr);
+  grid-template-columns: 224px minmax(0, 1fr);
   min-height: 100vh;
 }
 
 .app-sidebar {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1.1rem;
   min-height: 100vh;
-  padding: 1.25rem;
-  border-right: 1px solid var(--line);
-  background: color-mix(in srgb, var(--panel) 92%, transparent);
-  backdrop-filter: blur(18px);
+  padding: 1rem 0.75rem 0.75rem;
+  border-right: 1px solid var(--border-soft);
+  background: var(--bg);
 }
 
 .app-brand {
   display: flex;
-  gap: 0.8rem;
+  gap: 0.7rem;
   align-items: center;
+  padding: 0 0.35rem;
 }
 
 .app-brand__mark {
   display: grid;
   place-items: center;
-  width: 2.3rem;
-  height: 2.3rem;
-  border-radius: 0.7rem;
-  color: white;
-  font-weight: 800;
-  background: linear-gradient(135deg, #2457e6, #7c3aed);
-  box-shadow: 0 12px 24px rgb(36 87 230 / 25%);
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--r-sm);
+  color: var(--primary-fg);
+  background: var(--primary-bg);
+  font: 600 11px/1 var(--font-mono);
 }
 
 .app-brand strong,
@@ -113,33 +292,33 @@ a {
   display: block;
 }
 
-.app-brand small,
-.eyebrow,
-.app-sidebar__link-en,
-.muted {
-  color: var(--text-muted);
+.app-brand small {
+  font-size: 0.78rem;
 }
 
-.app-sidebar__primary-action,
-.button-primary {
+.app-sidebar__primary-action {
   display: inline-flex;
   justify-content: center;
   align-items: center;
   gap: 0.45rem;
-  border: 0;
-  border-radius: 0.75rem;
-  padding: 0.75rem 1rem;
-  color: white;
-  background: linear-gradient(135deg, #2457e6, #1d4ed8);
-  font-weight: 700;
-  box-shadow: 0 14px 32px rgb(36 87 230 / 22%);
+  border: 1px solid var(--primary-bg);
+  border-radius: var(--r-sm);
+  padding: 0.55rem 0.9rem;
+  color: var(--primary-fg);
+  background: var(--primary-bg);
+  font-weight: 500;
   cursor: pointer;
+}
+
+.app-sidebar__primary-action:hover {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
 }
 
 .app-sidebar__nav,
 .app-sidebar__footer {
   display: grid;
-  gap: 0.35rem;
+  gap: 0.2rem;
 }
 
 .app-sidebar__link {
@@ -147,30 +326,32 @@ a {
   grid-template-columns: 1.35rem 1fr;
   gap: 0.55rem;
   align-items: center;
-  border-radius: 0.75rem;
-  padding: 0.65rem 0.7rem;
-  color: var(--text);
+  border-radius: var(--r-sm);
+  padding: 0.5rem 0.6rem;
+  color: var(--muted);
 }
 
 .app-sidebar__link:hover {
-  background: var(--panel-muted);
+  background: var(--surface-2);
+  color: var(--text);
 }
 
 .app-sidebar__link-en {
   grid-column: 2;
-  font-size: 0.76rem;
+  font-size: 0.74rem;
 }
 
 .app-sidebar__footer {
   margin-top: auto;
-  padding-top: 1rem;
-  border-top: 1px solid var(--line-soft);
-  color: var(--text-muted);
-  font-size: 0.9rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--border-soft);
+  color: var(--muted);
+  font-size: 0.85rem;
 }
 
 .app-workspace {
   min-width: 0;
+  background: var(--surface);
 }
 
 .app-topbar {
@@ -178,84 +359,64 @@ a {
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
-  min-height: 80px;
-  padding: 1.1rem 1.8rem;
-  border-bottom: 1px solid var(--line);
-  background: color-mix(in srgb, var(--panel) 88%, transparent);
-  backdrop-filter: blur(18px);
+  min-height: 56px;
+  padding: 0.7rem 1.4rem;
+  border-bottom: 1px solid var(--border-soft);
+  background: var(--bg);
 }
 
 .app-topbar h1 {
-  margin: 0.12rem 0 0;
-  font-size: 1.35rem;
-  letter-spacing: -0.03em;
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 .app-topbar h1 span:not(.app-topbar__title-main) {
   margin-left: 0.75rem;
-  color: var(--text-muted);
-  font-size: 0.9rem;
-  font-weight: 500;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 400;
 }
 
 .app-topbar__actions {
   display: flex;
-  gap: 0.6rem;
+  gap: 0.5rem;
 }
 
-.segmented-button,
-.button-secondary,
-.button-danger {
-  border: 1px solid var(--line);
-  border-radius: 0.7rem;
-  padding: 0.58rem 0.85rem;
-  color: var(--text);
-  background: var(--panel);
-  cursor: pointer;
-}
-
-.button-danger {
-  color: var(--danger);
-}
-
-.segmented-button:disabled,
-.button-primary:disabled,
-.button-secondary:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
-}
-
+/* legacy stepper (removed in M2) */
 .workflow-stepper {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 0.75rem;
-  padding: 1rem 1.8rem;
-  border-bottom: 1px solid var(--line);
-  background: var(--panel);
+  gap: 0.6rem;
+  padding: 0.8rem 1.4rem;
+  border-bottom: 1px solid var(--border-soft);
+  background: var(--surface);
 }
 
 .workflow-stepper__item {
   display: flex;
-  gap: 0.7rem;
+  gap: 0.6rem;
   align-items: center;
   min-width: 0;
-  padding: 0.72rem;
-  border: 1px solid var(--line-soft);
-  border-radius: 0.9rem;
-  color: var(--text-muted);
-  background: var(--panel);
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--r-md);
+  color: var(--muted);
+  background: var(--surface);
 }
 
 .workflow-stepper__marker {
   display: grid;
   flex: 0 0 auto;
   place-items: center;
-  width: 2rem;
-  height: 2rem;
+  width: 1.6rem;
+  height: 1.6rem;
   border-radius: 999px;
-  background: var(--panel-muted);
-  color: var(--text-muted);
-  font-weight: 800;
+  border: 1px solid var(--border);
+  background: none;
+  color: var(--faint);
+  font: 500 10px/1 var(--font-mono);
 }
 
 .workflow-stepper__item strong,
@@ -268,31 +429,37 @@ a {
 
 .workflow-stepper__item strong {
   color: var(--text);
+  font-weight: 500;
 }
 
 .workflow-stepper__item--active {
-  border-color: color-mix(in srgb, var(--accent) 46%, var(--line));
-  background: var(--accent-soft);
+  border-color: var(--border);
+  background: var(--surface-3);
 }
 
 .workflow-stepper__item--active .workflow-stepper__marker {
-  color: white;
-  background: var(--accent);
+  border-color: var(--text);
+  color: var(--text);
 }
 
 .workflow-stepper__item--done .workflow-stepper__marker {
-  color: white;
-  background: var(--success);
+  border-color: transparent;
+  background: var(--surface-3);
+  color: var(--ok);
 }
 
 .app-main {
-  padding: 1.8rem;
+  padding: 1.4rem;
 }
+
+/* ============================================================
+   Page scaffolding
+   ============================================================ */
 
 .page-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
-  gap: 1.25rem;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 1rem;
   align-items: start;
 }
 
@@ -300,15 +467,14 @@ a {
 .help-panel,
 .card,
 .empty-state {
-  border: 1px solid var(--line);
-  border-radius: 1.05rem;
-  background: var(--panel);
-  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
 }
 
 .page-panel,
 .help-panel {
-  padding: 1.25rem;
+  padding: 1.1rem;
 }
 
 .page-header {
@@ -316,89 +482,115 @@ a {
   justify-content: space-between;
   align-items: flex-start;
   gap: 1rem;
-  margin-bottom: 1.2rem;
+  margin-bottom: 1.1rem;
 }
 
 .page-header h2 {
-  margin: 0 0 0.3rem;
-  font-size: 1.5rem;
-  letter-spacing: -0.035em;
+  margin: 0 0 0.25rem;
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 .page-header p,
 .help-panel p,
 .empty-state p {
   margin: 0;
-  color: var(--text-muted);
-  line-height: 1.55;
+  color: var(--muted);
+  line-height: 1.6;
+  font-size: 0.9rem;
+}
+
+.help-panel h3,
+.card h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.help-panel hr {
+  border: 0;
+  border-top: 1px solid var(--border-soft);
+  margin: 0.9rem 0;
 }
 
 .card,
 .empty-state {
-  padding: 1rem;
+  padding: 0.9rem 1rem;
 }
 
 .empty-state {
   border-style: dashed;
-  box-shadow: none;
-  background: var(--panel-muted);
+  background: none;
 }
+
+/* ============================================================
+   Forms
+   ============================================================ */
 
 .form-grid {
   display: grid;
-  gap: 0.9rem;
+  gap: 0.8rem;
 }
 
 .field {
   display: grid;
-  gap: 0.35rem;
+  gap: 0.3rem;
   color: var(--text);
-  font-weight: 650;
+  font-weight: 500;
+  font-size: 0.85rem;
 }
 
 .field span {
-  color: var(--text-muted);
-  font-size: 0.82rem;
-  font-weight: 500;
+  color: var(--faint);
+  font-size: 0.78rem;
+  font-weight: 400;
 }
 
 .field input,
 .field select,
-.field textarea {
+.field textarea,
+select {
   width: 100%;
-  border: 1px solid var(--line);
-  border-radius: 0.75rem;
-  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 0.5rem 0.65rem;
   color: var(--text);
-  background: var(--panel);
+  background: var(--surface);
+  font-size: 0.9rem;
+  font-weight: 400;
+}
+
+.field input::placeholder,
+.field textarea::placeholder {
+  color: var(--faint);
 }
 
 .field textarea {
-  min-height: 116px;
+  min-height: 100px;
   resize: vertical;
+  line-height: 1.6;
 }
 
 .upload-zone {
   display: grid;
   place-items: center;
-  min-height: 190px;
+  min-height: 170px;
   margin-bottom: 1rem;
-  border: 1.5px dashed color-mix(in srgb, var(--accent) 45%, var(--line));
-  border-radius: 1rem;
-  background: color-mix(in srgb, var(--accent-soft) 44%, transparent);
+  border: 1.5px dashed var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface);
   text-align: center;
+  color: var(--muted);
 }
+
+/* ============================================================
+   Tables
+   ============================================================ */
 
 .table-shell {
   width: 100%;
   overflow: auto;
-}
-
-.workbench-grid {
-  display: grid;
-  grid-template-columns: minmax(220px, 24%) minmax(360px, 1fr) minmax(280px, 30%);
-  gap: 1rem;
-  align-items: start;
 }
 
 table {
@@ -408,51 +600,133 @@ table {
 
 th,
 td {
-  border-bottom: 1px solid var(--line-soft);
-  padding: 0.75rem;
+  border-bottom: 1px solid var(--border-soft);
+  padding: 0.6rem 0.7rem;
   text-align: left;
   vertical-align: middle;
 }
 
 th {
-  color: var(--text-muted);
-  font-size: 0.82rem;
-  font-weight: 700;
+  color: var(--faint);
+  font: 500 10.5px/1.3 var(--font-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
+/* ============================================================
+   Workbench (rebuilt in M5)
+   ============================================================ */
+
+.workbench-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 24%) minmax(360px, 1fr) minmax(280px, 30%);
+  gap: 1rem;
+  align-items: start;
+}
+
+/* ============================================================
+   Status & feedback
+   ============================================================ */
+
 .alert {
-  border: 1px solid color-mix(in srgb, var(--warning) 45%, var(--line));
-  border-radius: 0.85rem;
-  padding: 0.75rem 0.9rem;
-  color: var(--warning);
-  background: color-mix(in srgb, var(--warning) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--edit) 45%, var(--border));
+  border-radius: var(--r-sm);
+  padding: 0.6rem 0.8rem;
+  color: var(--edit);
+  background: color-mix(in srgb, var(--edit) 8%, transparent);
+  font-size: 0.88rem;
 }
 
 .status-badge {
   display: inline-flex;
   align-items: center;
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: 999px;
-  padding: 0.15rem 0.5rem;
-  font-size: 0.78rem;
-  font-weight: 750;
-  background: var(--panel-muted);
+  padding: 0.12rem 0.5rem;
+  font: 500 10.5px/1.6 var(--font-mono);
+  background: var(--surface-3);
+  color: var(--muted);
 }
 
-.status-badge--accepted,
+.status-badge--accepted {
+  border-color: color-mix(in srgb, var(--ok) 42%, var(--border));
+  color: var(--ok);
+}
+
 .status-badge--edited {
-  border-color: color-mix(in srgb, var(--success) 42%, var(--line));
-  color: var(--success);
+  border-color: color-mix(in srgb, var(--edit) 42%, var(--border));
+  color: var(--edit);
 }
 
 .status-badge--rejected {
-  border-color: color-mix(in srgb, var(--danger) 42%, var(--line));
+  border-color: color-mix(in srgb, var(--danger) 42%, var(--border));
   color: var(--danger);
 }
 
 .error {
   color: var(--danger);
 }
+
+/* ============================================================
+   Paper — the deliverable surface
+   ============================================================ */
+
+.paper {
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: var(--r-sm);
+  padding: 1.6rem 1.6rem 2rem;
+  box-shadow: var(--shadow-paper);
+}
+
+.paper h2 {
+  margin: 0 0 0.25rem;
+  font: 600 17px/1.3 var(--font-doc);
+}
+
+.paper h3 {
+  font: 600 13px/1.3 var(--font-doc);
+  margin: 1rem 0 0.35rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--paper-shade);
+}
+
+.paper .docmeta {
+  font: 400 10.5px/1.5 var(--font-mono);
+  color: var(--ink-soft);
+  margin: 0 0 1rem;
+}
+
+.paper ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.paper li {
+  font-size: 12px;
+  line-height: 1.7;
+  padding-left: 14px;
+  position: relative;
+  color: #3b382f;
+}
+
+.paper li::before {
+  content: "–";
+  position: absolute;
+  left: 0;
+  color: var(--ink-soft);
+}
+
+.paper li .src {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  color: var(--ink-soft);
+}
+
+/* ============================================================
+   Responsive
+   ============================================================ */
 
 @media (max-width: 1100px) {
   body {
@@ -466,7 +740,7 @@ th {
   .app-sidebar {
     min-height: auto;
     border-right: 0;
-    border-bottom: 1px solid var(--line);
+    border-bottom: 1px solid var(--border-soft);
   }
 
   .workflow-stepper,
