@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -57,9 +57,11 @@ describe("ScreenshotManagerPage", () => {
 
     render(<App />);
 
-    const rows = await screen.findAllByRole("row");
-    expect(within(rows[1]).getByDisplayValue("Home")).toBeVisible();
-    expect(within(rows[2]).getByDisplayValue("Settings")).toBeVisible();
+    const pageInputs = await screen.findAllByLabelText(/^Page name for /);
+    expect(pageInputs.map((input) => (input as HTMLInputElement).value)).toEqual([
+      "Home",
+      "Settings",
+    ]);
     expect(screen.getByText("Recommendation: import at least 3 screenshots for stronger patterns.")).toBeVisible();
     const configureButton = screen.getByRole("button", { name: "Configure analysis" });
     expect(configureButton).toBeEnabled();

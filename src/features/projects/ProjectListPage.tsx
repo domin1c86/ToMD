@@ -113,25 +113,31 @@ export function ProjectListPage() {
       {projects.length > 0 ? (
         <ul className="project-list" aria-label="Projects">
           {projects.map((project) => (
-            <li className="card" key={project.id}>
-              <Link to={`/projects/${project.id}`}>{project.name}</Link>
-              <span> · {project.platform}</span>
-              <button
-                className="button-secondary"
-                type="button"
-                aria-label={`Archive ${project.name}`}
-                onClick={() => void archiveProject(project)}
-              >
-                {isEnglish ? "Archive" : "归档"}
-              </button>
-              <button
-                className="button-danger"
-                type="button"
-                aria-label={`Delete ${project.name}`}
-                onClick={() => setDeleteCandidate(project)}
-              >
-                {isEnglish ? "Delete" : "删除"}
-              </button>
+            <li className="card pcard" key={project.id}>
+              <Link className="pcard__name" to={`/projects/${project.id}`}>
+                {project.name}
+              </Link>
+              <span className="pcard__meta">
+                <span className="tag">{project.platform.toUpperCase()}</span>
+              </span>
+              <div className="pcard__actions">
+                <button
+                  className="button-secondary"
+                  type="button"
+                  aria-label={`Archive ${project.name}`}
+                  onClick={() => void archiveProject(project)}
+                >
+                  {isEnglish ? "Archive" : "归档"}
+                </button>
+                <button
+                  className="button-quiet button-danger-text"
+                  type="button"
+                  aria-label={`Delete ${project.name}`}
+                  onClick={() => setDeleteCandidate(project)}
+                >
+                  {isEnglish ? "Delete" : "删除"}
+                </button>
+              </div>
             </li>
           ))}
         </ul>

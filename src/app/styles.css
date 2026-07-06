@@ -581,6 +581,127 @@ select {
 }
 
 /* ============================================================
+   Project cards
+   ============================================================ */
+
+.project-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pcard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.pcard:hover {
+  border-color: var(--faint);
+}
+
+.pcard__name {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.pcard__meta {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.pcard__actions {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.3rem;
+}
+
+.button-danger-text {
+  color: var(--danger);
+}
+
+/* ============================================================
+   Screenshot cards
+   ============================================================ */
+
+.shot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.shot {
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.shot__thumb {
+  position: relative;
+  height: 120px;
+  border-bottom: 1px solid var(--border-soft);
+  background: var(--surface-3);
+}
+
+.shot__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.shot__dim {
+  position: absolute;
+  right: 8px;
+  bottom: 6px;
+  font: 400 10px/1 var(--font-mono);
+  color: rgb(255 255 255 / 88%);
+  background: rgb(0 0 0 / 45%);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.shot__fields {
+  padding: 0.65rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.shot__field {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--faint);
+}
+
+.shot__field input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
+.shot__actions {
+  display: flex;
+  gap: 0.35rem;
+  margin-top: 0.2rem;
+}
+
+/* ============================================================
    Tables
    ============================================================ */
 

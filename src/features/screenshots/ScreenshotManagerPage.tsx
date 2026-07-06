@@ -223,80 +223,61 @@ export function ScreenshotManagerPage() {
       ) : null}
 
       {sortedScreenshots.length > 0 ? (
-        <div className="table-shell">
-        <table>
-          <thead>
-            <tr>
-              <th>{isEnglish ? "Preview" : "预览"}</th>
-              <th>{isEnglish ? "Page" : "页面"}</th>
-              <th>{isEnglish ? "Scene" : "场景"}</th>
-              <th>{isEnglish ? "Dimensions" : "尺寸"}</th>
-              <th>{isEnglish ? "Media" : "格式"}</th>
-              <th>{isEnglish ? "Actions" : "操作"}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sortedScreenshots.map((screenshot) => (
-              <tr key={screenshot.id}>
-                <td>
-                  <img
-                    src={desktop.screenshotUrl(screenshot)}
-                    alt={`Screenshot preview for ${screenshot.page_name}`}
-                    width={96}
-                    style={{ display: "block", maxHeight: 64, objectFit: "cover" }}
+        <ul className="shot-grid" aria-label="Screenshots">
+          {sortedScreenshots.map((screenshot) => (
+            <li className="shot" key={screenshot.id}>
+              <div className="shot__thumb">
+                <img
+                  src={desktop.screenshotUrl(screenshot)}
+                  alt={`Screenshot preview for ${screenshot.page_name}`}
+                />
+                <span className="shot__dim">
+                  {screenshot.width}×{screenshot.height} · {screenshot.media_type.replace("image/", "")}
+                </span>
+              </div>
+              <div className="shot__fields">
+                <label className="shot__field">
+                  {isEnglish ? "Page" : "页面"}
+                  <input
+                    aria-label={`Page name for ${screenshot.page_name}`}
+                    value={screenshot.draftPageName}
+                    onChange={(event) =>
+                      updateDraft(screenshot.id, { draftPageName: event.target.value })
+                    }
                   />
-                </td>
-                <td>
-                  <label>
-                    Page name for {screenshot.page_name}
-                    <input
-                      value={screenshot.draftPageName}
-                      onChange={(event) =>
-                        updateDraft(screenshot.id, { draftPageName: event.target.value })
-                      }
-                    />
-                  </label>
-                </td>
-                <td>
-                  <label>
-                    Scene for {screenshot.page_name}
-                    <input
-                      value={screenshot.draftScene}
-                      onChange={(event) =>
-                        updateDraft(screenshot.id, { draftScene: event.target.value })
-                      }
-                    />
-                  </label>
-                </td>
-                <td>
-                  {screenshot.width} × {screenshot.height}
-                </td>
-                <td>{screenshot.media_type}</td>
-                <td>
+                </label>
+                <label className="shot__field">
+                  {isEnglish ? "Scene" : "场景"}
+                  <input
+                    aria-label={`Scene for ${screenshot.page_name}`}
+                    value={screenshot.draftScene}
+                    onChange={(event) =>
+                      updateDraft(screenshot.id, { draftScene: event.target.value })
+                    }
+                  />
+                </label>
+                <div className="shot__actions">
                   <button
                     className="button-secondary"
                     type="button"
                     aria-label={`Save metadata for ${screenshot.page_name}`}
                     onClick={() => void saveMetadata(screenshot)}
                   >
-                    {isEnglish
-                      ? `Save metadata for ${screenshot.page_name}`
-                      : `保存 ${screenshot.page_name} 的标注`}
+                    {isEnglish ? "Save" : "保存标注"}
                   </button>
                   <button
-                    className="button-danger"
+                    className="button-quiet button-danger-text"
                     type="button"
                     aria-label={`Remove ${screenshot.page_name}`}
                     onClick={() => void removeScreenshot(screenshot)}
                   >
-                    {isEnglish ? `Remove ${screenshot.page_name}` : `移除 ${screenshot.page_name}`}
+                    {isEnglish ? "Remove" : "移除"}
                   </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        </div>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
       ) : null}
       </div>
       <aside className="help-panel">
