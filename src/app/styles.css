@@ -594,6 +594,7 @@ select {
 }
 
 .pcard {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -606,6 +607,18 @@ select {
 .pcard__name {
   font-weight: 600;
   font-size: 0.95rem;
+}
+
+/* stretch the project link across the whole card */
+.pcard__name::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+.pcard__actions {
+  position: relative;
+  z-index: 1;
 }
 
 .pcard__meta {
