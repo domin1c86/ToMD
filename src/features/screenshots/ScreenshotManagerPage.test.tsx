@@ -67,7 +67,7 @@ describe("ScreenshotManagerPage", () => {
     expect(configureButton).toBeEnabled();
 
     await user.click(configureButton);
-    expect(await screen.findByText("Provider setup")).toBeVisible();
+    expect(await screen.findByText("发送前确认")).toBeVisible();
   });
 
   it("keeps local screenshot management available when provider commands are unavailable", async () => {

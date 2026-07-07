@@ -2,7 +2,6 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 import { AnalysisStartPage } from "../features/analysis/AnalysisStartPage";
 import { ExportHistoryPage } from "../features/exports/ExportHistoryPage";
-import { ProviderSettingsPage } from "../features/providers/ProviderSettingsPage";
 import { ProjectListPage } from "../features/projects/ProjectListPage";
 import { ScreenshotManagerPage } from "../features/screenshots/ScreenshotManagerPage";
 import { WorkbenchPage } from "../features/workbench/WorkbenchPage";
@@ -20,7 +19,6 @@ export function App() {
         <Routes>
           <Route path="/" element={<ProjectListPage />} />
           <Route path="/projects/:projectId" element={<ScreenshotManagerPage />} />
-          <Route path="/projects/:projectId/providers" element={<ProviderSettingsPage />} />
           <Route path="/projects/:projectId/analyze" element={<AnalysisStartPage />} />
           <Route path="/projects/:projectId/workbench" element={<WorkbenchPage />} />
           <Route path="/projects/:projectId/exports" element={<ExportHistoryPage />} />

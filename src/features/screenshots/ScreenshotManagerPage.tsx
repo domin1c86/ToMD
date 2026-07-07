@@ -151,7 +151,7 @@ export function ScreenshotManagerPage() {
           type="button"
           aria-label="Configure analysis"
           disabled={sortedScreenshots.length === 0}
-          onClick={() => navigate(`/projects/${projectId}/providers`)}
+          onClick={() => navigate(`/projects/${projectId}/analyze`)}
         >
           {isEnglish ? "Next: configure provider" : "下一步：配置模型"}
         </button>

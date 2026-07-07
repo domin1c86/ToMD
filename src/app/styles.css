@@ -1026,6 +1026,86 @@ th {
 }
 
 /* ============================================================
+   Generic modal (settings)
+   ============================================================ */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(28 30 38 / 35%);
+}
+
+:root[data-theme="dark"] .modal-overlay {
+  background: rgb(0 0 0 / 50%);
+}
+
+.modal-win {
+  width: min(620px, 90%);
+  max-height: min(640px, 88%);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 30px 90px rgb(10 12 18 / 40%);
+}
+
+.modal-win__header {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.75rem 1.1rem;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.modal-win__title {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.modal-win__spacer {
+  flex: 1;
+}
+
+.modal-win__body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 1rem 1.2rem 1.3rem;
+}
+
+.settings-section__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  margin-bottom: 0.35rem;
+}
+
+.settings-section__head h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.settings-note {
+  font-size: 0.82rem;
+  margin: 0 0 0.8rem;
+}
+
+.provider-item__actions {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.45rem;
+}
+
+/* ============================================================
    Fine-tune chat (floating pill + bubbles, expanded dialog)
    ============================================================ */
 

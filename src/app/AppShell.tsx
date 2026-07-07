@@ -1,6 +1,7 @@
-import { ReactNode, useMemo, useSyncExternalStore } from "react";
+import { ReactNode, useMemo, useState, useSyncExternalStore } from "react";
 import { Link, useLocation } from "react-router-dom";
 
+import { SettingsModal } from "../features/settings/SettingsModal";
 import {
   getNetworkRequestCount,
   subscribeNetworkRequests,
@@ -24,11 +25,12 @@ export function AppShell({ children }: AppShellProps) {
   const projectId = useMemo(() => extractProjectId(location.pathname), [location.pathname]);
   const activeStep = useMemo(() => stepFromPath(location.pathname), [location.pathname]);
   const requestCount = useSyncExternalStore(subscribeNetworkRequests, getNetworkRequestCount);
+  const [showSettings, setShowSettings] = useState(false);
 
   const steps: { key: StepKey; label: string; to: string; ariaLabel?: string }[] = [
     { key: "projects", label: t("stepProjects"), to: "/", ariaLabel: "Projects" },
     { key: "screenshots", label: t("stepScreenshots"), to: projectId ? `/projects/${projectId}` : "/" },
-    { key: "provider", label: t("stepProvider"), to: projectId ? `/projects/${projectId}/providers` : "/" },
+    { key: "provider", label: t("stepProvider"), to: projectId ? `/projects/${projectId}/analyze` : "/" },
     { key: "review", label: t("stepReview"), to: projectId ? `/projects/${projectId}/workbench` : "/" },
     { key: "exports", label: t("stepExports"), to: projectId ? `/projects/${projectId}/exports` : "/" },
   ];
@@ -57,7 +59,17 @@ export function AppShell({ children }: AppShellProps) {
         >
           {theme === "light" ? t("darkTheme") : t("lightTheme")}
         </button>
+        <button
+          className="headerbar__chip"
+          type="button"
+          aria-label="Open settings"
+          onClick={() => setShowSettings(true)}
+        >
+          {t("settings")}
+        </button>
       </header>
+
+      {showSettings ? <SettingsModal onClose={() => setShowSettings(false)} /> : null}
 
       <div className="frame-shell">
         <nav className="sidebar" aria-label="Primary navigation">
@@ -120,7 +132,7 @@ function extractProjectId(pathname: string): string | null {
 }
 
 function stepFromPath(pathname: string): StepKey {
-  if (pathname.includes("/providers") || pathname.includes("/analyze")) {
+  if (pathname.includes("/analyze")) {
     return "provider";
   }
   if (pathname.includes("/workbench")) {

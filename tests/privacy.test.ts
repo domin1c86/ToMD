@@ -40,6 +40,7 @@ describe("local-first MVP privacy flow", () => {
 
   beforeEach(() => {
     vi.resetAllMocks();
+    localStorage.clear();
     window.history.pushState({}, "", "/");
     fetchSpy = vi.fn();
     vi.stubGlobal("fetch", fetchSpy);
@@ -114,8 +115,9 @@ describe("local-first MVP privacy flow", () => {
 
     await user.type(await screen.findByLabelText("Local screenshot paths"), "C:/safe/dashboard.png");
     await user.click(screen.getByRole("button", { name: "Import screenshots" }));
-    await user.click(await screen.findByRole("button", { name: "Configure analysis" }));
 
+    await user.click(screen.getByRole("button", { name: "Open settings" }));
+    await user.click(await screen.findByRole("button", { name: "Add AI model" }));
     await user.selectOptions(await screen.findByLabelText("Provider type"), "open_ai_compatible");
     await user.type(screen.getByLabelText("Provider name"), "My endpoint");
     await user.type(screen.getByLabelText("Base URL"), "https://ai.example.com/v1");
@@ -123,7 +125,9 @@ describe("local-first MVP privacy flow", () => {
     await user.type(screen.getByLabelText("API key"), "sk-secret");
     await user.click(screen.getByRole("button", { name: "Save provider" }));
     await user.click(await screen.findByRole("button", { name: "Test connection for My endpoint" }));
-    await user.click(await screen.findByRole("button", { name: "Continue to disclosure" }));
+    await user.click(screen.getByRole("button", { name: "Close settings" }));
+
+    await user.click(await screen.findByRole("button", { name: "Configure analysis" }));
 
     expect(await screen.findByText("Provider: My endpoint")).toBeVisible();
     expect(screen.getByText("Model: vision-model")).toBeVisible();
