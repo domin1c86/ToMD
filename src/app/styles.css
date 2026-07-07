@@ -1249,50 +1249,37 @@ th {
   color: var(--faint);
 }
 
-.chat-modal {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgb(28 30 38 / 35%);
-}
-
-:root[data-theme="dark"] .chat-modal {
-  background: rgb(0 0 0 / 50%);
-}
-
-.chat-win {
-  width: min(560px, 88%);
-  height: min(540px, 84%);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  overflow: hidden;
+/* history popover floating above the static input bar */
+.chat-history-pop {
   display: flex;
   flex-direction: column;
-  box-shadow: 0 30px 90px rgb(10 12 18 / 40%);
+  max-height: 340px;
+  margin-bottom: 0.6rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-float);
 }
 
-.chat-win header {
+.chat-history-pop__header {
   flex: none;
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  padding: 0.7rem 1rem;
+  padding: 0.55rem 0.9rem;
   border-bottom: 1px solid var(--border-soft);
 }
 
-.chat-win__title {
+.chat-history-pop__title {
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
 }
 
-.chat-win__sub {
+.chat-history-pop__sub {
   flex: 1;
   color: var(--faint);
-  font-size: 0.78rem;
+  font-size: 0.76rem;
 }
 
 .chat-history {
@@ -1343,16 +1330,6 @@ th {
 .chat-chips .tag:hover {
   color: var(--text);
   border-color: var(--faint);
-}
-
-.chat-win .chatbar {
-  margin: 0 0.9rem;
-  box-shadow: none;
-}
-
-.chat-win .chat-note {
-  padding: 0.5rem 1.1rem 0.8rem;
-  margin: 0;
 }
 
 /* ============================================================

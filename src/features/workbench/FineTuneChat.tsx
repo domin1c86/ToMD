@@ -166,23 +166,13 @@ export function FineTuneChat({
     </p>
   );
 
-  if (expanded) {
-    return (
-      <div
-        className="chat-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Refine chat history"
-        onClick={(event) => {
-          if (event.target === event.currentTarget) {
-            setExpanded(false);
-          }
-        }}
-      >
-        <div className="chat-win">
-          <header>
-            <span className="chat-win__title">{isEnglish ? "Refine chat" : "微调对话"}</span>
-            <span className="chat-win__sub">
+  return (
+    <div className="chatfloat">
+      {expanded ? (
+        <div className="chat-history-pop" role="dialog" aria-label="Refine chat history">
+          <header className="chat-history-pop__header">
+            <span className="chat-history-pop__title">{isEnglish ? "Refine chat" : "微调对话"}</span>
+            <span className="chat-history-pop__sub">
               {isEnglish ? "Changes return as edited rules" : "改动以「已编辑」状态回到规则列表"}
             </span>
             <button
@@ -195,6 +185,9 @@ export function FineTuneChat({
             </button>
           </header>
           <div className="chat-history">
+            {messages.length === 0 ? (
+              <p className="muted">{isEnglish ? "No messages yet." : "还没有对话记录。"}</p>
+            ) : null}
             {messages.map((message) => (
               <div
                 key={message.id}
@@ -204,48 +197,43 @@ export function FineTuneChat({
               </div>
             ))}
           </div>
-          {composer}
-          {note}
         </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="chatfloat">
-      <div className="chat-bubbles" aria-live="polite">
-        {bubbleIds.map((id) => {
-          const message = messages.find((candidate) => candidate.id === id);
-          if (!message) {
-            return null;
-          }
-          return (
-            <div
-              key={id}
-              className={`chat-bubble chat-bubble--${message.role}${message.error ? " chat-msg--error" : ""}`}
-            >
-              <MessageBody message={message} onSelectRule={onSelectRule} />
-              <button
-                className="chat-bubble__x"
-                type="button"
-                aria-label="Dismiss message"
-                onClick={() => dismissBubble(id)}
+      ) : (
+        <div className="chat-bubbles" aria-live="polite">
+          {bubbleIds.map((id) => {
+            const message = messages.find((candidate) => candidate.id === id);
+            if (!message) {
+              return null;
+            }
+            return (
+              <div
+                key={id}
+                className={`chat-bubble chat-bubble--${message.role}${message.error ? " chat-msg--error" : ""}`}
               >
-                ✕
-              </button>
-            </div>
-          );
-        })}
-      </div>
+                <MessageBody message={message} onSelectRule={onSelectRule} />
+                <button
+                  className="chat-bubble__x"
+                  type="button"
+                  aria-label="Dismiss message"
+                  onClick={() => dismissBubble(id)}
+                >
+                  ✕
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
       <div className="chatfloat__bar">
         {composer}
         <button
           className="button-quiet chatfloat__expand"
           type="button"
-          aria-label="Expand chat history"
-          onClick={() => setExpanded(true)}
+          aria-label={expanded ? "Collapse chat history" : "Expand chat history"}
+          aria-expanded={expanded}
+          onClick={() => setExpanded((current) => !current)}
         >
-          ⤢
+          {expanded ? "⤡" : "⤢"}
         </button>
       </div>
       {note}
