@@ -118,6 +118,13 @@ export type ProviderIdInput = {
   providerId: string;
 };
 
+export type FetchProviderModelsInput = {
+  kind: ProviderKind;
+  baseUrl: string;
+  apiKey?: string;
+  providerId?: string;
+};
+
 export type AnalysisSelectionInput = ProjectIdInput & {
   providerId: string;
   screenshotIds: string[];
@@ -191,6 +198,10 @@ export const desktop = {
   testProvider: (input: ProviderIdInput) => {
     recordNetworkRequest();
     return command<ProviderCapabilities, ProviderIdInput>("test_provider", input);
+  },
+  fetchProviderModels: (input: FetchProviderModelsInput) => {
+    recordNetworkRequest();
+    return command<string[], FetchProviderModelsInput>("fetch_provider_models", input);
   },
 
   previewAnalysisRequest: (input: AnalysisSelectionInput) =>

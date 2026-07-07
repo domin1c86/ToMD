@@ -22,6 +22,7 @@ pub fn handler() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Send + Syn
         providers::save_provider,
         providers::delete_provider,
         providers::test_provider,
+        providers::fetch_provider_models,
         analysis::preview_analysis_request,
         analysis::analyze_project,
         rules::get_design_spec,

@@ -4,6 +4,7 @@ pub mod config;
 pub mod credentials;
 mod error;
 mod extract;
+mod models;
 mod gemini;
 mod openai;
 mod openai_compatible;
@@ -22,5 +23,6 @@ pub use credentials::{
 };
 pub use error::ProviderError;
 pub use gemini::GeminiProvider;
+pub use models::list_models;
 pub use openai::OpenAiProvider;
 pub use openai_compatible::OpenAiCompatibleProvider;

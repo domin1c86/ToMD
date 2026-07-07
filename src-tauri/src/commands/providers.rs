@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc};
 use design_providers::{
-    build_provider, credential_ref_for_provider, delete_provider_secret_with_store,
+    build_provider, credential_ref_for_provider, delete_provider_secret_with_store, list_models,
     read_provider_secret_with_store, replace_provider_secret_with_store, save_provider_with_store,
     ProviderCapabilities, ProviderConfig, ProviderConfigView, ProviderKind, SecretString,
 };
@@ -173,6 +173,46 @@ pub async fn test_provider(
     )
     .map_err(command_error)?;
     provider.test_connection().await.map_err(command_error)
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FetchProviderModelsInput {
+    kind: ProviderKind,
+    base_url: Url,
+    /// Key typed in the form; falls back to the stored secret of `provider_id`.
+    api_key: Option<String>,
+    provider_id: Option<String>,
+}
+
+#[tauri::command]
+pub async fn fetch_provider_models(
+    state: State<'_, AppState>,
+    input: FetchProviderModelsInput,
+) -> CommandResult<Vec<String>> {
+    let secret = match input.api_key.filter(|key| !key.trim().is_empty()) {
+        Some(key) => key,
+        None => {
+            let provider_id = input
+                .provider_id
+                .as_deref()
+                .ok_or_else(|| "apiKey or providerId is required".to_owned())?;
+            let provider_id = parse_uuid(provider_id, "providerId")?;
+            let config = get_provider_config(&state.db_path, provider_id)?;
+            read_provider_secret_with_store(&state.credential_store, &config)
+                .map_err(command_error)?
+                .ok_or_else(|| "provider credential was not found".to_owned())?
+        }
+    };
+
+    list_models(
+        input.kind,
+        &input.base_url,
+        &SecretString::new(secret),
+        &state.http_client,
+    )
+    .await
+    .map_err(command_error)
 }
 
 pub fn get_provider_config(
