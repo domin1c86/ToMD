@@ -108,13 +108,32 @@ describe("FineTuneChat", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("disables the composer until a provider passed a connection test", async () => {
+  it("disables the composer until a model is selected or verified", async () => {
     localStorage.clear();
     render(<App />);
 
     expect(await screen.findByLabelText("Refine instruction")).toBeDisabled();
     expect(screen.getByRole("button", { name: "Apply instruction" })).toBeDisabled();
-    expect(screen.getByText("先在模型配置页通过连接测试，才能使用指令微调。")).toBeVisible();
+    expect(
+      screen.getByText("请先在「设置」中添加模型，并在分析页选择后再使用指令微调。"),
+    ).toBeVisible();
+  });
+
+  it("uses the model selected on the analysis page even if untested", async () => {
+    const user = userEvent.setup();
+    localStorage.clear();
+    localStorage.setItem("dle.selectedProviderId", "provider-picked");
+    render(<App />);
+
+    await user.type(await screen.findByLabelText("Refine instruction"), "Adjust rules");
+    await user.click(screen.getByRole("button", { name: "Apply instruction" }));
+
+    expect(mockedDesktop.refineRules).toHaveBeenCalledWith({
+      projectId: "project-1",
+      providerId: "provider-picked",
+      instruction: "Adjust rules",
+      ruleId: undefined,
+    });
   });
 });
 

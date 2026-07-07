@@ -93,14 +93,37 @@ describe("AnalysisStartPage", () => {
     expect(await screen.findByText("Rule workbench")).toBeVisible();
   });
 
-  it("blocks sending until the selected provider passed a connection test", async () => {
+  it("warns about untested models but still allows sending at the user's own risk", async () => {
+    const user = userEvent.setup();
     localStorage.clear();
     render(<App />);
 
     expect(await screen.findByText("Provider: My endpoint")).toBeVisible();
-    expect(screen.getByText("该 Provider 尚未通过连接测试。请先在模型配置页测试连接。")).toBeVisible();
-    expect(screen.getByRole("button", { name: "Send and analyze" })).toBeDisabled();
-    expect(mockedDesktop.analyzeProject).not.toHaveBeenCalled();
+    expect(
+      screen.getByText("该模型未通过连接测试。你仍然可以发送，但模型可用性与结果质量由你自行负责。"),
+    ).toBeVisible();
+    const sendButton = screen.getByRole("button", { name: "Send and analyze" });
+    expect(sendButton).toBeEnabled();
+
+    await user.click(sendButton);
+    expect(mockedDesktop.analyzeProject).toHaveBeenCalledWith({
+      projectId: "project-1",
+      providerId: "provider-1",
+      screenshotIds: ["shot-1", "shot-2", "shot-3"],
+    });
+  });
+
+  it("prefers the model chosen previously on the analysis page", async () => {
+    localStorage.clear();
+    localStorage.setItem("dle.selectedProviderId", "provider-2");
+    mockedDesktop.listProviders.mockResolvedValue([
+      provider(),
+      provider({ id: "provider-2", name: "Second endpoint", model: "other-model" }),
+    ]);
+
+    render(<App />);
+
+    expect(await screen.findByLabelText("Analysis provider")).toHaveValue("provider-2");
   });
 
   it("uses the verified provider instead of the first saved provider", async () => {

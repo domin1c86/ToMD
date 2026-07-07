@@ -3,7 +3,7 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { useI18n } from "../../app/i18n";
 import type { DesignSpec } from "../../generated/bindings";
 import { desktop } from "../../lib/desktop";
-import { lastVerifiedProviderId } from "../../lib/providerVerification";
+import { lastVerifiedProviderId, selectedProviderId } from "../../lib/providerVerification";
 
 const BUBBLE_TTL_MS = 3000;
 const MAX_BUBBLES = 2;
@@ -43,7 +43,7 @@ export function FineTuneChat({
   const [scope, setScope] = useState<"all" | "current">("all");
   const nextId = useRef(1);
   const timers = useRef<number[]>([]);
-  const providerId = lastVerifiedProviderId();
+  const providerId = selectedProviderId() ?? lastVerifiedProviderId();
 
   useEffect(() => {
     const currentTimers = timers.current;
@@ -161,8 +161,8 @@ export function FineTuneChat({
           ? "Instructions and rule text are sent to the configured provider; changes come back as edited, never finalized."
           : "指令与相关规则文本会发送给所配置的 Provider；改动以「已编辑」状态回到列表，不会直接定稿。"
         : isEnglish
-          ? "Test a provider connection first to enable instruction refinement."
-          : "先在模型配置页通过连接测试，才能使用指令微调。"}
+          ? "Add an AI model in the settings and pick it on the analysis page to enable refinement."
+          : "请先在「设置」中添加模型，并在分析页选择后再使用指令微调。"}
     </p>
   );
 

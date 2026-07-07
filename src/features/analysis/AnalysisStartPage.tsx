@@ -4,9 +4,18 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useI18n } from "../../app/i18n";
 import { desktop } from "../../lib/desktop";
 import type { AnalysisPreview, Provider, Screenshot } from "../../lib/desktop";
-import { isProviderVerified, lastVerifiedProviderId } from "../../lib/providerVerification";
+import {
+  isProviderVerified,
+  lastVerifiedProviderId,
+  selectedProviderId,
+  setSelectedProviderId,
+} from "../../lib/providerVerification";
 
 function initialProviderId(providers: Provider[]): string | null {
+  const stored = selectedProviderId();
+  if (stored && providers.some((provider) => provider.id === stored)) {
+    return stored;
+  }
   const last = lastVerifiedProviderId();
   if (last && providers.some((provider) => provider.id === last)) {
     return last;
@@ -22,13 +31,13 @@ export function AnalysisStartPage() {
   const isEnglish = locale === "en-US";
   const [providers, setProviders] = useState<Provider[]>([]);
   const [screenshots, setScreenshots] = useState<Screenshot[]>([]);
-  const [selectedProviderId, setSelectedProviderId] = useState<string | null>(null);
+  const [currentProviderId, setCurrentProviderId] = useState<string | null>(null);
   const [preview, setPreview] = useState<AnalysisPreview | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
 
-  const selectedProvider = providers.find((provider) => provider.id === selectedProviderId) ?? null;
+  const selectedProvider = providers.find((provider) => provider.id === currentProviderId) ?? null;
   const providerVerified = selectedProvider !== null && isProviderVerified(selectedProvider.id);
   const selectedScreenshotIds = useMemo(
     () => screenshots.map((screenshot) => screenshot.id),
@@ -52,7 +61,7 @@ export function AnalysisStartPage() {
 
         setProviders(loadedProviders);
         setScreenshots(loadedScreenshots);
-        setSelectedProviderId(initialProviderId(loadedProviders));
+        setCurrentProviderId(initialProviderId(loadedProviders));
       } catch (caught) {
         if (!cancelled) {
           setError(caught instanceof Error ? caught.message : String(caught));
@@ -72,7 +81,7 @@ export function AnalysisStartPage() {
   }, [projectId]);
 
   useEffect(() => {
-    if (!selectedProviderId || selectedScreenshotIds.length === 0) {
+    if (!currentProviderId || selectedScreenshotIds.length === 0) {
       setPreview(null);
       return;
     }
@@ -83,7 +92,7 @@ export function AnalysisStartPage() {
       try {
         const nextPreview = await desktop.previewAnalysisRequest({
           projectId,
-          providerId: selectedProviderId as string,
+          providerId: currentProviderId as string,
           screenshotIds: selectedScreenshotIds,
         });
         if (!cancelled) {
@@ -102,10 +111,10 @@ export function AnalysisStartPage() {
     return () => {
       cancelled = true;
     };
-  }, [projectId, selectedProviderId, selectedScreenshotIds]);
+  }, [projectId, currentProviderId, selectedScreenshotIds]);
 
   const sendAnalysis = async () => {
-    if (!selectedProvider || !providerVerified || selectedScreenshotIds.length === 0) {
+    if (!selectedProvider || selectedScreenshotIds.length === 0) {
       return;
     }
 
@@ -142,7 +151,11 @@ export function AnalysisStartPage() {
       {error ? <p role="alert">{error}</p> : null}
 
       {!loading && !selectedProvider ? (
-        <p>{isEnglish ? "No provider configured." : "尚未配置 Provider。"}</p>
+        <p>
+          {isEnglish
+            ? "No provider configured. Add an AI model in the settings (top right)."
+            : "尚未配置模型。请点击右上角「设置」添加 AI 模型。"}
+        </p>
       ) : null}
       {!loading && selectedProvider && selectedScreenshotIds.length === 0 ? (
         <p>{isEnglish ? "No screenshots selected for analysis." : "没有可用于分析的截图。"}</p>
@@ -153,8 +166,11 @@ export function AnalysisStartPage() {
           {isEnglish ? "Analysis provider" : "分析使用的 Provider"}
           <select
             aria-label="Analysis provider"
-            value={selectedProviderId ?? ""}
-            onChange={(event) => setSelectedProviderId(event.target.value)}
+            value={currentProviderId ?? ""}
+            onChange={(event) => {
+              setCurrentProviderId(event.target.value);
+              setSelectedProviderId(event.target.value);
+            }}
           >
             {providers.map((provider) => (
               <option key={provider.id} value={provider.id}>
@@ -168,8 +184,8 @@ export function AnalysisStartPage() {
       {selectedProvider && !providerVerified ? (
         <p role="alert">
           {isEnglish
-            ? "This provider has not passed a connection test. Test it on the provider settings page first."
-            : "该 Provider 尚未通过连接测试。请先在模型配置页测试连接。"}
+            ? "This model has not passed a connection test. You can still send, but you are responsible for its availability and output quality."
+            : "该模型未通过连接测试。你仍然可以发送，但模型可用性与结果质量由你自行负责。"}
         </p>
       ) : null}
 
@@ -193,7 +209,7 @@ export function AnalysisStartPage() {
         className="button-primary"
         type="button"
         aria-label="Send and analyze"
-        disabled={!preview || analyzing || !providerVerified}
+        disabled={!preview || analyzing}
         onClick={() => void sendAnalysis()}
       >
         {isEnglish ? "Send and analyze" : "发送并分析"}

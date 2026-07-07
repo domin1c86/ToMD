@@ -54,3 +54,22 @@ export function lastVerifiedProviderId(): string | null {
     return null;
   }
 }
+
+const SELECTED_KEY = "dle.selectedProviderId";
+
+/** The model chosen on the analysis page; also used by the workbench chat. */
+export function setSelectedProviderId(providerId: string): void {
+  try {
+    localStorage.setItem(SELECTED_KEY, providerId);
+  } catch {
+    // ignore
+  }
+}
+
+export function selectedProviderId(): string | null {
+  try {
+    return localStorage.getItem(SELECTED_KEY);
+  } catch {
+    return null;
+  }
+}
