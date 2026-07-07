@@ -1,7 +1,33 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#171717" />
-  <path
-    d="M142 132h112c88 0 142 48 142 124s-54 124-142 124H142V132Zm108 190c51 0 79-24 79-66s-28-66-79-66h-42v132h42Z"
-    fill="#fafafa"
-  />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <mask id="clear-under-code-card" x="-32" y="-60" width="280" height="300" maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse">
+      <rect x="-32" y="-60" width="280" height="300" fill="white" />
+      <rect x="88" y="-40" width="144" height="208" rx="20" fill="black" />
+    </mask>
+  </defs>
+
+  <rect width="512" height="512" rx="115" fill="none" />
+
+  <g transform="translate(256 256) scale(1.55) translate(-256 -256)">
+  <g transform="translate(143, 177)" mask="url(#clear-under-code-card)">
+    <rect x="16" y="16" width="112" height="160" rx="12" fill="none" stroke="#1C1C1E" stroke-width="8" stroke-dasharray="12 12" />
+    
+    <path d="M 0 48 L 0 0 L 48 0" fill="none" stroke="#6366F1" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 144 48 L 144 0 L 96 0" fill="none" stroke="#6366F1" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 0 144 L 0 192 L 48 192" fill="none" stroke="#6366F1" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 144 144 L 144 192 L 96 192" fill="none" stroke="#6366F1" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <g transform="translate(235, 141)">
+    <rect x="0" y="0" width="136" height="200" rx="16" fill="none" stroke="#1C1C1E" stroke-width="8" />
+    
+    <line x1="32" y1="40" x2="104" y2="40" stroke="#1C1C1E" stroke-width="8" stroke-linecap="round"/>
+    
+    <path d="M 32 86 L 16 102 L 32 118" fill="none" stroke="#6366F1" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 104 86 L 120 102 L 104 118" fill="none" stroke="#6366F1" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+    <line x1="56" y1="130" x2="80" y2="74" stroke="#6366F1" stroke-width="10" stroke-linecap="round"/>
+    
+    <line x1="32" y1="160" x2="104" y2="160" stroke="#1C1C1E" stroke-width="8" stroke-linecap="round"/>
+  </g>
+  </g>
 </svg>
