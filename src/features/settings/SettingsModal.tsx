@@ -11,7 +11,7 @@ import {
 
 const defaultBaseUrls: Record<ProviderKind, string> = {
   open_ai: "https://api.openai.com/v1",
-  anthropic: "https://api.anthropic.com",
+  anthropic: "https://api.anthropic.com/v1",
   gemini: "https://generativelanguage.googleapis.com/v1beta",
   open_ai_compatible: "",
   anthropic_compatible: "",
@@ -25,7 +25,8 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
   const { locale } = useI18n();
   const isEnglish = locale === "en-US";
   const [providers, setProviders] = useState<Provider[]>([]);
-  const [view, setView] = useState<"list" | "add">("list");
+  const [view, setView] = useState<"list" | "form">("list");
+  const [editing, setEditing] = useState<Provider | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -38,6 +39,8 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
   const [baseUrl, setBaseUrl] = useState(defaultBaseUrls.open_ai);
   const [model, setModel] = useState("");
   const [apiKey, setApiKey] = useState("");
+  const [modelOptions, setModelOptions] = useState<string[] | null>(null);
+  const [fetchingModels, setFetchingModels] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -72,12 +75,17 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [onClose]);
 
-  const resetForm = () => {
-    setKind("open_ai");
-    setName("");
-    setBaseUrl(defaultBaseUrls.open_ai);
-    setModel("");
+  const openForm = (provider: Provider | null) => {
+    setError(null);
+    setNotice(null);
+    setEditing(provider);
+    setKind(provider?.kind ?? "open_ai");
+    setName(provider?.name ?? "");
+    setBaseUrl(provider?.base_url ?? defaultBaseUrls.open_ai);
+    setModel(provider?.model ?? "");
     setApiKey("");
+    setModelOptions(null);
+    setView("form");
   };
 
   const saveProvider = async (event: FormEvent<HTMLFormElement>) => {
@@ -85,6 +93,7 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
     setError(null);
     try {
       const saved = await desktop.saveProvider({
+        providerId: editing?.id,
         name: name.trim(),
         kind,
         baseUrl: baseUrl.trim(),
@@ -93,10 +102,39 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
       });
       clearProviderVerification(saved.id);
       setProviders((current) => [saved, ...current.filter((provider) => provider.id !== saved.id)]);
-      resetForm();
+      setEditing(null);
       setView("list");
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
+    }
+  };
+
+  const fetchModels = async () => {
+    setError(null);
+    if (!apiKey.trim() && !editing) {
+      setError(
+        isEnglish
+          ? "Enter the API key first, then fetch the model list."
+          : "请先填写 API Key，再获取模型列表。",
+      );
+      return;
+    }
+    setFetchingModels(true);
+    try {
+      const fetched = await desktop.fetchProviderModels({
+        kind,
+        baseUrl: baseUrl.trim(),
+        apiKey: apiKey || undefined,
+        providerId: editing?.id,
+      });
+      setModelOptions(fetched);
+      if (!fetched.includes(model)) {
+        setModel(fetched[0] ?? "");
+      }
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setFetchingModels(false);
     }
   };
 
@@ -141,6 +179,11 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
     }
   };
 
+  const modelSelectOptions =
+    modelOptions && model && !modelOptions.includes(model)
+      ? [model, ...modelOptions]
+      : modelOptions;
+
   return (
     <div
       className="modal-overlay"
@@ -174,11 +217,7 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
                   className="button-secondary"
                   type="button"
                   aria-label="Add AI model"
-                  onClick={() => {
-                    setError(null);
-                    setNotice(null);
-                    setView("add");
-                  }}
+                  onClick={() => openForm(null)}
                 >
                   ＋
                 </button>
@@ -223,6 +262,14 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
                       <button
                         className="button-secondary"
                         type="button"
+                        aria-label={`Edit ${provider.name}`}
+                        onClick={() => openForm(provider)}
+                      >
+                        {isEnglish ? "Edit" : "编辑"}
+                      </button>
+                      <button
+                        className="button-secondary"
+                        type="button"
                         aria-label={`Test connection for ${provider.name}`}
                         disabled={testingId === provider.id}
                         onClick={() => void testProvider(provider)}
@@ -249,14 +296,25 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
               </ul>
             </section>
           ) : (
-            <section aria-label="Add AI model">
+            <section aria-label={editing ? "Edit AI model" : "Add AI model"}>
               <div className="settings-section__head">
-                <h3>{isEnglish ? "Add AI model" : "添加 AI 模型"}</h3>
+                <h3>
+                  {editing
+                    ? isEnglish
+                      ? "Edit AI model"
+                      : "编辑 AI 模型"
+                    : isEnglish
+                      ? "Add AI model"
+                      : "添加 AI 模型"}
+                </h3>
                 <button
                   className="button-quiet"
                   type="button"
                   aria-label="Back to model list"
-                  onClick={() => setView("list")}
+                  onClick={() => {
+                    setEditing(null);
+                    setView("list");
+                  }}
                 >
                   {isEnglish ? "Back" : "返回"}
                 </button>
@@ -271,6 +329,7 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
                       const nextKind = event.target.value as ProviderKind;
                       setKind(nextKind);
                       setBaseUrl(defaultBaseUrls[nextKind]);
+                      setModelOptions(null);
                     }}
                   >
                     <option value="open_ai">OpenAI</option>
@@ -290,16 +349,63 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
                 </label>
                 <label className="field">
                   Base URL
-                  <input value={baseUrl} onChange={(event) => setBaseUrl(event.target.value)} />
-                </label>
-                <label className="field">
-                  {isEnglish ? "Model name" : "模型名称"}
                   <input
-                    aria-label="Model name"
-                    value={model}
-                    onChange={(event) => setModel(event.target.value)}
+                    value={baseUrl}
+                    onChange={(event) => {
+                      setBaseUrl(event.target.value);
+                      setModelOptions(null);
+                    }}
                   />
                 </label>
+                <div className="field">
+                  {isEnglish ? "Model name" : "模型名称"}
+                  <div className="model-row">
+                    {modelSelectOptions ? (
+                      <select
+                        aria-label="Model name"
+                        value={model}
+                        onChange={(event) => setModel(event.target.value)}
+                      >
+                        {modelSelectOptions.map((candidate) => (
+                          <option key={candidate} value={candidate}>
+                            {candidate}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        aria-label="Model name"
+                        value={model}
+                        onChange={(event) => setModel(event.target.value)}
+                      />
+                    )}
+                    <button
+                      className="button-secondary"
+                      type="button"
+                      aria-label="Fetch models"
+                      disabled={fetchingModels || !baseUrl.trim()}
+                      onClick={() => void fetchModels()}
+                    >
+                      {fetchingModels
+                        ? isEnglish
+                          ? "Fetching…"
+                          : "获取中…"
+                        : isEnglish
+                          ? "Fetch models"
+                          : "获取模型"}
+                    </button>
+                    {modelSelectOptions ? (
+                      <button
+                        className="button-quiet"
+                        type="button"
+                        aria-label="Enter model manually"
+                        onClick={() => setModelOptions(null)}
+                      >
+                        {isEnglish ? "Enter manually" : "手动输入"}
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
                 <label className="field">
                   API key
                   <input
@@ -309,9 +415,13 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
                   />
                 </label>
                 <p className="muted settings-note">
-                  {isEnglish
-                    ? "The key is stored by the desktop backend and never refilled into this form."
-                    : "密钥只交给桌面后端保存，前端不会回填或读取明文。"}
+                  {editing
+                    ? isEnglish
+                      ? "Leave the key empty to keep the stored one. Keys are held by the desktop backend and never refilled."
+                      : "留空则沿用已保存的 Key。密钥只交给桌面后端保存，前端不会回填。"
+                    : isEnglish
+                      ? "The key is stored by the desktop backend and never refilled into this form."
+                      : "密钥只交给桌面后端保存，前端不会回填或读取明文。"}
                 </p>
                 <button className="button-primary" type="submit" aria-label="Save provider">
                   {isEnglish ? "Save provider" : "保存 Provider"}

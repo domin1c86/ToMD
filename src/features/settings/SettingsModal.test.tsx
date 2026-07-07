@@ -12,6 +12,7 @@ vi.mock("../../lib/desktop", () => ({
     saveProvider: vi.fn(),
     deleteProvider: vi.fn(),
     testProvider: vi.fn(),
+    fetchProviderModels: vi.fn(),
   },
 }));
 
@@ -104,6 +105,71 @@ describe("SettingsModal", () => {
 
     expect(mockedDesktop.deleteProvider).toHaveBeenCalledWith({ providerId: "provider-1" });
     expect(screen.queryByText("My endpoint", { exact: false })).not.toBeInTheDocument();
+  });
+
+  it("edits an existing model, keeping the stored key when left empty", async () => {
+    mockedDesktop.listProviders.mockResolvedValue([provider()]);
+    mockedDesktop.saveProvider.mockResolvedValue(provider({ model: "vision-large" }));
+    const user = await openSettings();
+
+    await user.click(await screen.findByRole("button", { name: "Edit My endpoint" }));
+
+    expect(await screen.findByLabelText("Provider name")).toHaveValue("My endpoint");
+    expect(screen.getByLabelText("Model name")).toHaveValue("vision-model");
+    expect(screen.getByText("留空则沿用已保存的 Key。密钥只交给桌面后端保存，前端不会回填。")).toBeVisible();
+
+    await user.clear(screen.getByLabelText("Model name"));
+    await user.type(screen.getByLabelText("Model name"), "vision-large");
+    await user.click(screen.getByRole("button", { name: "Save provider" }));
+
+    expect(mockedDesktop.saveProvider).toHaveBeenCalledWith({
+      providerId: "provider-1",
+      name: "My endpoint",
+      kind: "open_ai_compatible",
+      baseUrl: "https://ai.example.com/v1",
+      model: "vision-large",
+      apiKey: undefined,
+    });
+    expect(await screen.findByText("vision-large")).toBeVisible();
+  });
+
+  it("fetches available models and turns the model field into a dropdown", async () => {
+    mockedDesktop.fetchProviderModels.mockResolvedValue(["vision-large", "vision-mini"]);
+    mockedDesktop.saveProvider.mockResolvedValue(provider({ model: "vision-mini" }));
+    const user = await openSettings();
+
+    await user.click(screen.getByRole("button", { name: "Add AI model" }));
+    await user.selectOptions(await screen.findByLabelText("Provider type"), "open_ai_compatible");
+    await user.type(screen.getByLabelText("Provider name"), "My endpoint");
+    await user.type(screen.getByLabelText("Base URL"), "https://ai.example.com/v1");
+    await user.type(screen.getByLabelText("API key"), "sk-secret");
+    await user.click(screen.getByRole("button", { name: "Fetch models" }));
+
+    expect(mockedDesktop.fetchProviderModels).toHaveBeenCalledWith({
+      kind: "open_ai_compatible",
+      baseUrl: "https://ai.example.com/v1",
+      apiKey: "sk-secret",
+      providerId: undefined,
+    });
+    const modelSelect = await screen.findByLabelText("Model name");
+    expect(modelSelect.tagName).toBe("SELECT");
+    await user.selectOptions(modelSelect, "vision-mini");
+    await user.click(screen.getByRole("button", { name: "Save provider" }));
+
+    expect(mockedDesktop.saveProvider).toHaveBeenCalledWith(
+      expect.objectContaining({ model: "vision-mini" }),
+    );
+  });
+
+  it("requires a key before fetching models for a new provider", async () => {
+    const user = await openSettings();
+
+    await user.click(screen.getByRole("button", { name: "Add AI model" }));
+    await user.type(await screen.findByLabelText("Base URL"), "https://ai.example.com/v1");
+    await user.click(screen.getByRole("button", { name: "Fetch models" }));
+
+    expect(await screen.findByText("请先填写 API Key，再获取模型列表。")).toBeVisible();
+    expect(mockedDesktop.fetchProviderModels).not.toHaveBeenCalled();
   });
 
   it("shows save errors without leaking the secret and closes on demand", async () => {
